@@ -17,11 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed:user": "bun run src/users/seeder/index.ts",
-    "seed:auth": "bun run src/auth/seeder/index.ts",
-    "seed:prisma": "bun run src/prisma/seeder/index.ts",
-    "seed": "bun run src/users/seeder/index.ts && bun run src/auth/seeder/index.ts && bun run src/prisma/seeder/index.ts"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

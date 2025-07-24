@@ -1,5 +1,4 @@
-// schema.prisma
-
+// --- Generator & Datasource ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,20 +9,180 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String
-  role      Role     @default(CUSTOMER)
-  avatarUrl String?  @map("avatar_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-}
-
+// --- ENUMS ---
 enum Role {
   ADMIN
   OWNER
   CUSTOMER
+}
+
+enum PropertyType {
+  VILLA
+  HOUSE
+  APARTMENT
+}
+
+// --- USER MODEL ---
+model User {
+  id          String     @id @default(uuid())
+  name        String
+  email       String     @unique
+  password    String
+  phone       String
+  role        Role       @default(CUSTOMER)
+  avatarUrl   String?    @map("avatar_url")
+  properties  Property[] @relation("UserProperties")
+  reviews     Review[]
+  bookings    Booking[]
+  wishlists   Wishlist[]
+  favorites   Favorite[]
+  notifications Notification[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+}
+
+// --- PROPERTY (Generic) ---
+model Property {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  location    String
+  price       Int
+  type        PropertyType
+  ownerId     String
+  owner       User            @relation("UserProperties", fields: [ownerId], references: [id])
+  villa       Villa?          @relation("PropertyVilla")
+  images      PropertyImage[]
+  reviews     Review[]
+  bookings    Booking[]
+  facilities  Facility[]      @relation("PropertyFacilities")
+  wishlists   Wishlist[]
+  favorites   Favorite[]
+  messages    Message[]
+  availabilities Availability[]
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+}
+
+// --- VILLA (Specific Type) ---
+model Villa {
+  id              String   @id
+  bedrooms        Int
+  bathrooms       Int
+  hasSwimmingPool Boolean  @map("has_swimming_pool")
+  property        Property @relation("PropertyVilla", fields: [id], references: [id], onDelete: Cascade)
+}
+
+// --- PROPERTY IMAGE (Multiple per property) ---
+model PropertyImage {
+  id         String   @id @default(uuid())
+  url        String
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+// --- REVIEW (User reviews for properties) ---
+model Review {
+  id         String   @id @default(uuid())
+  rating     Int
+  comment    String
+  userId     String
+  propertyId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- BOOKING (User bookings for properties) ---
+model Booking {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  payment    Payment?
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- FACILITY (Facilities for properties) ---
+model Facility {
+  id         String     @id @default(uuid())
+  name       String
+  properties Property[] @relation("PropertyFacilities")
+}
+
+// --- FAVORITE (Properti yang disukai user, sekadar penanda) ---
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- WISHLIST (Properti yang ingin dibooking user, niat booking di masa depan) ---
+model Wishlist {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- PAYMENT (Pembayaran booking) ---
+model Payment {
+  id         String   @id @default(uuid())
+  bookingId  String   @unique
+  amount     Int
+  status     PaymentStatus @default(PENDING)
+  method     String
+  paidAt     DateTime?
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+// --- NOTIFICATION (Notifikasi untuk user) ---
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  content    String
+  read       Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- MESSAGE (Chat antara user dan owner) ---
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  propertyId String
+  content    String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+// --- AVAILABILITY (Ketersediaan properti) ---
+model Availability {
+  id         String   @id @default(uuid())
+  propertyId String
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
 }
