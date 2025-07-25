@@ -1,53 +1,35 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
-import { LoginAuthDto } from './dto/login-auth.dto';
-import { ProfileAuthDto } from './dto/profile-auth.dto';
+import { UserProfileDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthRepository {
-  constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async register(payload: RegisterAuthDto) {
-    const hashed = await bcrypt.hash(payload.password, 10);
-    const user = await this.usersService.createUser({
-      ...payload,
-      password: hashed,
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
     });
-    const { password, ...rest } = user;
-    return rest;
   }
 
-  async login(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) throw new UnauthorizedException('Invalid password');
-
-    const access_token = await this.jwtService.signAsync({
-      sub: user.id,
-      role: user.role,
-      type: 'access',
+  async findById(id: string): Promise<UserProfileDto | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
     });
-
-    const refresh_token = await this.jwtService.signAsync({
-      sub: user.id,
-      role: user.role,
-      type: 'refresh',
-    }, { expiresIn: '7d' });
-
-    const { password: _password, ...userWithoutPassword } = user;
-    return { access_token, refresh_token, user: userWithoutPassword };
+    
+    if (!user) return null;
+    
+    const { password, ...userData } = user;
+    return userData;
   }
 
-  async getProfile(user: any): Promise<ProfileAuthDto> {
-    const { password, ...profile } = user;
-    return profile;
+  async createUser(data: RegisterAuthDto & { password: string }): Promise<UserProfileDto> {
+    const user = await this.prisma.user.create({
+      data,
+    });
+    
+    const { password: _, ...userData } = user;
+    return userData;
   }
-} 
+}

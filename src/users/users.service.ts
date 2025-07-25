@@ -1,38 +1,62 @@
-// src/users/users.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { UsersRepository } from './users.repository';
-
-interface FindAllOptions {
-  search?: string;
-  page?: number;
-  limit?: number;
-}
+import { FindAllOptions } from '../../common/types';
+import { User } from '@prisma/client';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto, UserListResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private usersRepository: UsersRepository) {}
 
-  async findAll(options: FindAllOptions = {}): Promise<{ data: any[]; total: number; page: number; limit: number }> {
-    return this.usersRepository.findAll(options);
+  async findAll(options: FindAllOptions = {}): Promise<UserListResponseDto> {
+    const result = await this.usersRepository.findAll(options);
+    return {
+      ...result,
+      data: result.data.map(this.toUserResponseDto),
+    };
   }
 
-  async findById(id: string): Promise<any | null> {
-    return this.usersRepository.findById(id);
+  async findById(id: string): Promise<UserResponseDto> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return this.toUserResponseDto(user);
   }
 
-  async findByEmail(email: string): Promise<any | null> {
-    return this.usersRepository.findByEmail(email);
+  async findByEmail(email: string): Promise<UserResponseDto> {
+    const user = await this.usersRepository.findByEmail(email);
+    if (!user) throw new NotFoundException('User not found');
+    return this.toUserResponseDto(user);
   }
 
-  async createUser(data: any): Promise<any> {
-    return this.usersRepository.createUser(data);
+  async createUser(data: CreateUserDto): Promise<UserResponseDto> {
+    // Check for duplicate email
+    const existing = await this.usersRepository.findByEmail(data.email);
+    if (existing) throw new ConflictException('Email already in use');
+    const user = await this.usersRepository.createUser(data);
+    return this.toUserResponseDto(user);
   }
 
-  async updateUser(id: string, data: any): Promise<any> {
-    return this.usersRepository.updateUser(id, data);
+  async updateUser(id: string, data: UpdateUserDto): Promise<UserResponseDto> {
+    // Check if user exists
+    const user = await this.usersRepository.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    const updated = await this.usersRepository.updateUser(id, data);
+    return this.toUserResponseDto(updated);
   }
 
-  async deleteUser(id: string): Promise<any> {
-    return this.usersRepository.deleteUser(id);
+  async deleteUser(id: string): Promise<UserResponseDto> {
+    // Check if user exists
+    const user = await this.usersRepository.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    const deleted = await this.usersRepository.deleteUser(id);
+    return this.toUserResponseDto(deleted);
+  }
+
+  private toUserResponseDto(user: User): UserResponseDto {
+    // Exclude password and map to DTO
+    const { password, ...rest } = user;
+    return rest as UserResponseDto;
   }
 }

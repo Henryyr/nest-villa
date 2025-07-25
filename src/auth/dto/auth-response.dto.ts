@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ProfileAuthDto {
+export class UserProfileDto {
   @ApiProperty({ description: 'ID user', example: 'uuid-user' })
   id: string;
 
@@ -24,4 +24,20 @@ export class ProfileAuthDto {
 
   @ApiProperty({ description: 'Tanggal update terakhir', example: '2024-05-01T12:00:00.000Z' })
   updatedAt: Date;
+}
+
+export class AuthResponseDto {
+  @ApiProperty({ description: 'Access token for authentication' })
+  access_token: string;
+
+  @ApiProperty({ description: 'Refresh token for getting new access token' })
+  refresh_token: string;
+
+  @ApiProperty({ description: 'User profile information', type: UserProfileDto })
+  user: UserProfileDto;
+}
+
+export class RegisterResponseDto {
+  @ApiProperty({ description: 'User profile information', type: UserProfileDto })
+  user: UserProfileDto;
 } 

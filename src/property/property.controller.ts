@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { PropertyService } from './property.service';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { PropertyResponseDto } from './dto/property-response.dto';
 
 @ApiTags('property')
 @Controller('property')
@@ -8,32 +9,52 @@ export class PropertyController {
   constructor(private readonly propertyService: PropertyService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all properties (customer)' })
-  @ApiQuery({ name: 'type', required: false, description: 'Property type (VILLA, HOUSE, APARTMENT)' })
+  @ApiOperation({ summary: 'List all properties' })
+  @ApiResponse({ status: 200, description: 'List of properties', type: [PropertyResponseDto] })
   @ApiQuery({ name: 'search', required: false, description: 'Search by title or location' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
-  @ApiResponse({ status: 200, description: 'List of properties returned' })
+  @HttpCode(HttpStatus.OK)
   findAll(
-    @Query('type') type?: string,
     @Query('search') search?: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
-  ) {
-    return this.propertyService.findAll({ type, search, page: +page, limit: +limit });
+  ): Promise<{ data: PropertyResponseDto[]; total: number; page: number; limit: number }> {
+    return this.propertyService.findAll({ search, page: +page, limit: +limit });
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get property detail (customer)' })
-  @ApiResponse({ status: 200, description: 'Property detail returned' })
-  findOne(@Param('id') id: string) {
-    return this.propertyService.findOne(id);
+  @ApiOperation({ summary: 'Get property by ID' })
+  @ApiResponse({ status: 200, description: 'Property detail returned', type: PropertyResponseDto })
+  @ApiResponse({ status: 404, description: 'Property not found' })
+  @HttpCode(HttpStatus.OK)
+  findOne(@Param('id') id: string): Promise<PropertyResponseDto> {
+    return this.propertyService.findById(id);
   }
 
-  @Get('villa/:id')
-  @ApiOperation({ summary: 'Get villa detail (customer)' })
-  @ApiResponse({ status: 200, description: 'Villa detail returned' })
-  findVilla(@Param('id') id: string) {
-    return this.propertyService.findVillaDetail(id);
+  @Post()
+  @ApiOperation({ summary: 'Create property' })
+  @ApiResponse({ status: 201, description: 'Property created', type: PropertyResponseDto })
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() dto: any): Promise<PropertyResponseDto> {
+    return this.propertyService.createProperty(dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update property' })
+  @ApiResponse({ status: 200, description: 'Property updated', type: PropertyResponseDto })
+  @ApiResponse({ status: 404, description: 'Property not found' })
+  @HttpCode(HttpStatus.OK)
+  update(@Param('id') id: string, @Body() dto: any): Promise<PropertyResponseDto> {
+    return this.propertyService.updateProperty(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete property' })
+  @ApiResponse({ status: 200, description: 'Property deleted', type: PropertyResponseDto })
+  @ApiResponse({ status: 404, description: 'Property not found' })
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id') id: string): Promise<PropertyResponseDto> {
+    return this.propertyService.deleteProperty(id);
   }
 } 

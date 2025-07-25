@@ -20,11 +20,11 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api/doc', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   Logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  Logger.log(`📚 Swagger API docs available at: http://localhost:${port}/api`);
+  Logger.log(`📚 Swagger API docs available at: http://localhost:3000/api/doc`);
 }
 bootstrap();
