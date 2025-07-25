@@ -2,7 +2,7 @@ import { Controller, Post, Delete, Get, Body, Param, Req, UseGuards, Query, Http
 import { FavoriteService } from './favorite.service';
 import { AddFavoriteDto } from './dto/add-favorite.dto';
 import { JwtAuthGuard } from 'common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FavoriteResponseDto } from './dto/favorite-response.dto';
 import { Request } from 'express';
 import { JwtPayload } from 'common/types';

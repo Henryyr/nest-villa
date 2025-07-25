@@ -2,7 +2,7 @@ import { Controller, Post, Delete, Get, Body, Param, Req, UseGuards, Query, Http
 import { WishlistService } from './wishlist.service';
 import { AddWishlistDto } from './dto/add-wishlist.dto';
 import { JwtAuthGuard } from 'common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { WishlistResponseDto } from './dto/wishlist-response.dto';
 import { Request } from 'express';
 import { JwtPayload } from 'common/types';

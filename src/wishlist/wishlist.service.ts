@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { WishlistRepository } from './wishlist.repository';
-import { FindAllOptions } from '../../common/types';
+import { FindAllOptions, WishlistWithProperty } from '../../common/types';
 import { WishlistResponseDto } from './dto/wishlist-response.dto';
+import { Wishlist } from '@prisma/client';
 
 @Injectable()
 export class WishlistService {
@@ -34,18 +35,20 @@ export class WishlistService {
     return wishlists.map(this.toWishlistResponseDto);
   }
 
-  private toWishlistResponseDto(wishlist: any): WishlistResponseDto {
+  private toWishlistResponseDto(wishlist: WishlistWithProperty | (Wishlist & { property?: undefined })): WishlistResponseDto {
     return {
       id: wishlist.id,
       userId: wishlist.userId,
-      property: wishlist.property && {
-        id: wishlist.property.id,
-        title: wishlist.property.title,
-        location: wishlist.property.location,
-        price: wishlist.property.price,
-        images: wishlist.property.images,
-        villa: wishlist.property.villa,
-      },
+      property: wishlist.property
+        ? {
+            id: wishlist.property.id,
+            title: wishlist.property.title,
+            location: wishlist.property.location,
+            price: wishlist.property.price,
+            images: wishlist.property.images,
+            villa: wishlist.property.villa,
+          }
+        : null,
     };
   }
 } 

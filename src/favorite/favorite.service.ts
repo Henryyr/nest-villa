@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { FavoriteRepository } from './favorite.repository';
-import { FindAllOptions } from '../../common/types';
+import { FavoriteWithProperty, FindAllOptions } from '../../common/types';
 import { FavoriteResponseDto } from './dto/favorite-response.dto';
+import { Favorite } from '@prisma/client';
 
 @Injectable()
 export class FavoriteService {
@@ -34,18 +35,20 @@ export class FavoriteService {
     return favorites.map(this.toFavoriteResponseDto);
   }
 
-  private toFavoriteResponseDto(favorite: any): FavoriteResponseDto {
+  private toFavoriteResponseDto(favorite: FavoriteWithProperty | (Favorite & { property?: undefined })): FavoriteResponseDto {
     return {
-      id: favorite.id,
-      userId: favorite.userId,
-      property: favorite.property && {
-        id: favorite.property.id,
-        title: favorite.property.title,
-        location: favorite.property.location,
-        price: favorite.property.price,
-        images: favorite.property.images,
-        villa: favorite.property.villa,
-      },
+      id: favorite?.id ?? '',
+      userId: favorite?.userId ?? '',
+      property: favorite?.property
+        ? {
+            id: favorite.property.id,
+            title: favorite.property.title,
+            location: favorite.property.location,
+            price: favorite.property.price,
+            images: favorite.property.images,
+            villa: favorite.property.villa,
+          }
+        : null,
     };
   }
 } 

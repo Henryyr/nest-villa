@@ -1,4 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { PropertyImage } from '@prisma/client';
+
+export class VillaDto {
+  @ApiProperty()
+  id: string;
+  @ApiProperty()
+  bedrooms: number;
+  @ApiProperty()
+  bathrooms: number;
+  @ApiProperty()
+  hasSwimmingPool: boolean;
+}
 
 export class WishlistPropertyDto {
   @ApiProperty()
@@ -14,10 +26,10 @@ export class WishlistPropertyDto {
   price: number;
 
   @ApiProperty({ type: [Object], description: 'Property images' })
-  images: any[];
+  images: PropertyImage[];
 
-  @ApiProperty({ type: Object, description: 'Villa details', required: false })
-  villa?: any;
+  @ApiProperty({ type: VillaDto, required: false, nullable: true, description: 'Villa details' })
+  villa?: VillaDto | null;
 }
 
 export class WishlistResponseDto {
@@ -27,6 +39,6 @@ export class WishlistResponseDto {
   @ApiProperty()
   userId: string;
 
-  @ApiProperty({ type: () => WishlistPropertyDto })
-  property: WishlistPropertyDto;
+  @ApiProperty({ type: () => WishlistPropertyDto, nullable: true })
+  property: WishlistPropertyDto | null;
 } 

@@ -56,7 +56,8 @@ export class UsersService {
 
   private toUserResponseDto(user: User): UserResponseDto {
     // Exclude password and map to DTO
-    const { password, ...rest } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...rest } = user;
     return rest as UserResponseDto;
   }
 }

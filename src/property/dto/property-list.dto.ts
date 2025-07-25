@@ -7,9 +7,6 @@ export class PropertyListDto {
   @ApiProperty({ example: 'Villa Mewah Bali', description: 'Judul property' })
   title: string;
 
-  @ApiProperty({ example: 'Villa mewah dengan pemandangan laut di Bali', description: 'Deskripsi property' })
-  description: string;
-
   @ApiProperty({ example: 'Bali', description: 'Lokasi property' })
   location: string;
 
@@ -18,9 +15,6 @@ export class PropertyListDto {
 
   @ApiProperty({ example: 'VILLA', description: 'Tipe property', enum: ['VILLA', 'HOUSE', 'APARTMENT'] })
   type: string;
-
-  @ApiProperty({ example: 'uuid-owner', description: 'ID owner property' })
-  ownerId: string;
 
   @ApiProperty({ type: [String], description: 'URL gambar property', example: ['https://...'] })
   images: string[];

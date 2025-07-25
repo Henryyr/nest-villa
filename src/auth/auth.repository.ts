@@ -20,8 +20,11 @@ export class AuthRepository {
     
     if (!user) return null;
     
-    const { password, ...userData } = user;
-    return userData;
+    const { password, ...rest } = user;
+    if (typeof password !== 'string') {
+      throw new Error('Password is missing or invalid');
+    }
+    return rest;
   }
 
   async createUser(data: RegisterAuthDto & { password: string }): Promise<UserProfileDto> {
@@ -29,7 +32,10 @@ export class AuthRepository {
       data,
     });
     
-    const { password: _, ...userData } = user;
-    return userData;
+    const { password: _, ...userWithoutPassword } = user;
+    if (typeof _ !== 'string') {
+      throw new Error('Password is missing or invalid');
+    }
+    return userWithoutPassword;
   }
 }

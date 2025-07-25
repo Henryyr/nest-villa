@@ -1,3 +1,6 @@
+import { Wishlist, Property, PropertyImage, Villa, Favorite } from '@prisma/client';
+
+
 export interface FindAllOptions {
   search?: string;
   page?: number;
@@ -15,3 +18,23 @@ export interface JwtPayload {
   email: string;
   role: string;
 }
+
+export type WishlistWithProperty = Wishlist & {
+  property: Property & {
+    images: PropertyImage[];
+    villa: Villa | null;
+  };
+};
+
+export type FavoriteWithProperty = Favorite & {
+  property: Property & {
+    images: PropertyImage[];
+    villa: Villa | null;
+  };
+};
+
+
+export type PropertyWithRelations = Property & {
+  images: PropertyImage[];
+  villa: Villa | null;
+};

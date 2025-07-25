@@ -6,6 +6,7 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { AuthResponseDto, RegisterResponseDto, UserProfileDto } from './dto/auth-response.dto';
 import { JwtPayload } from 'common/types';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -22,10 +23,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hashedPassword = await Bun.password.hash(payload.password, {
-      algorithm: 'bcrypt',
-      cost: 10,
-    });
+    const hashedPassword = await bcrypt.hash(payload.password, 10);
 
     // Create user
     const user = await this.authRepository.createUser({
@@ -44,7 +42,7 @@ export class AuthService {
     }
 
     // Verify password
-    const isPasswordValid = await Bun.password.verify(payload.password, user.password);
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -53,7 +51,8 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
 
     // Return response
-    const { password: _, ...userData } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...userData } = user;
     return {
       ...tokens,
       user: userData,
@@ -68,7 +67,7 @@ export class AuthService {
     return profile;
   }
 
-  private async generateTokens(user: any) {
+  private async generateTokens(user: { id: string; email: string; role: string }) {
     const payload = {
       sub: user.id,
       email: user.email,

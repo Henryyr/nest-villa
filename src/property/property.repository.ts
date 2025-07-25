@@ -38,6 +38,14 @@ export class PropertyRepository {
       include: {
         images: true,
         villa: true,
+        facilities: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }
