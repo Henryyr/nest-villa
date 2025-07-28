@@ -7,7 +7,7 @@ export interface RateLimitConfig {
   maxRequests: number; // Maximum requests per window
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
-  keyGenerator?: (request: any) => string;
+  keyGenerator?: (request: Record<string, unknown>) => string;
 }
 
 export interface RateLimitResult {

@@ -20,7 +20,7 @@ export class MessageService {
     }
     
     // Add to queue for processing
-    await this.queueService.addFileJob({
+    await this.queueService.addMessageJob({
       type: 'ephemeral-message',
       to: receiverId,
       from: sender.id,

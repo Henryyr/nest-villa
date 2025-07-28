@@ -9,7 +9,7 @@ export interface NotificationJobData {
   type: string;
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   channels?: string[];
 }
 

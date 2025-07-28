@@ -189,7 +189,7 @@ export class SessionService {
   }
 
   // Get session activity
-  async getSessionActivity(sessionId: string): Promise<any[]> {
+  async getSessionActivity(sessionId: string): Promise<Record<string, unknown>[]> {
     const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
     const activityKey = `${sessionKey}:activity`;
     const activities = await this.redisService.lrange(activityKey, 0, -1);

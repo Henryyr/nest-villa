@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { NotFoundError, ConflictError } from '../../common/types/error.types';
 import { UsersRepository } from './users.repository';
 import { FindAllOptions } from '../../common/types';
 import { User } from '@prisma/client';
@@ -43,7 +44,7 @@ export class UsersService {
     }
 
     const user = await this.usersRepository.findById(id);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundError('User');
     
     // Cache user data
     await this.cacheService.cacheUser(id, user);
@@ -52,14 +53,14 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<UserResponseDto> {
     const user = await this.usersRepository.findByEmail(email);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundError('User');
     return this.toUserResponseDto(user);
   }
 
   async createUser(data: CreateUserDto): Promise<UserResponseDto> {
     // Check for duplicate email
     const existing = await this.usersRepository.findByEmail(data.email);
-    if (existing) throw new ConflictException('Email already in use');
+    if (existing) throw new ConflictError('Email already in use');
     
     const user = await this.usersRepository.createUser(data);
     
@@ -75,9 +76,9 @@ export class UsersService {
   async updateUser(id: string, data: UpdateUserDto): Promise<UserResponseDto> {
     // Check if user exists
     const user = await this.usersRepository.findById(id);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundError('User');
     
-    const updated = await this.usersRepository.updateUser(id, data);
+    const updated = await this.usersRepository.updateUser(id, data as Record<string, unknown>);
     
     // Invalidate cache
     await this.cacheService.invalidateUserCache(id);
@@ -86,7 +87,7 @@ export class UsersService {
     await this.cacheService.cacheUser(id, updated as CachedUser);
     
     // Add profile update job to queue
-    await this.queueService.addUserProfileUpdateJob(id, data);
+    await this.queueService.addUserProfileUpdateJob(id, data as Record<string, unknown>);
     
     return this.toUserResponseDto(updated);
   }
@@ -94,7 +95,7 @@ export class UsersService {
   async deleteUser(id: string): Promise<UserResponseDto> {
     // Check if user exists
     const user = await this.usersRepository.findById(id);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundError('User');
     
     const deleted = await this.usersRepository.deleteUser(id);
     

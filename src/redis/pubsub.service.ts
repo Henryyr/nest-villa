@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 
 export interface PubSubMessage {
   channel: string;
-  message: any;
+  message: Record<string, unknown>;
   timestamp: number;
   publisher?: string;
 }
@@ -61,7 +61,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Publish a message to a channel
-  async publish(channel: string, message: any, publisher?: string): Promise<number> {
+  async publish(channel: string, message: Record<string, unknown>, publisher?: string): Promise<number> {
     const pubSubMessage: PubSubMessage = {
       channel,
       message,
@@ -111,7 +111,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Property-specific channels
-  async publishPropertyUpdate(propertyId: string, update: any): Promise<void> {
+  async publishPropertyUpdate(propertyId: string, update: Record<string, unknown>): Promise<void> {
     await this.publish(`property:${propertyId}`, update, 'property-service');
   }
 
@@ -120,7 +120,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // User-specific channels
-  async publishUserNotification(userId: string, notification: any): Promise<void> {
+  async publishUserNotification(userId: string, notification: Record<string, unknown>): Promise<void> {
     await this.publish(`user:${userId}:notifications`, notification, 'notification-service');
   }
 
@@ -129,7 +129,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // System-wide notifications
-  async publishSystemNotification(notification: any): Promise<void> {
+  async publishSystemNotification(notification: Record<string, unknown>): Promise<void> {
     await this.publish('system:notifications', notification, 'system');
   }
 
@@ -138,7 +138,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Real-time messaging
-  async publishMessage(roomId: string, message: any): Promise<void> {
+  async publishMessage(roomId: string, message: Record<string, unknown>): Promise<void> {
     await this.publish(`chat:${roomId}`, message, 'chat-service');
   }
 
@@ -147,7 +147,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Property search updates
-  async publishSearchUpdate(searchId: string, results: any): Promise<void> {
+  async publishSearchUpdate(searchId: string, results: Record<string, unknown>): Promise<void> {
     await this.publish(`search:${searchId}`, results, 'search-service');
   }
 
@@ -156,7 +156,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Email notifications
-  async publishEmailNotification(email: string, notification: any): Promise<void> {
+  async publishEmailNotification(email: string, notification: Record<string, unknown>): Promise<void> {
     await this.publish(`email:${email}`, notification, 'email-service');
   }
 
@@ -165,7 +165,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Admin notifications
-  async publishAdminNotification(adminId: string, notification: any): Promise<void> {
+  async publishAdminNotification(adminId: string, notification: Record<string, unknown>): Promise<void> {
     await this.publish(`admin:${adminId}`, notification, 'admin-service');
   }
 
@@ -185,7 +185,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Broadcast to multiple channels
-  async broadcast(channels: string[], message: any, publisher?: string): Promise<void> {
+  async broadcast(channels: string[], message: Record<string, unknown>, publisher?: string): Promise<void> {
     const promises = channels.map(channel => this.publish(channel, message, publisher));
     await Promise.all(promises);
   }

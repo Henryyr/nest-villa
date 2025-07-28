@@ -2,22 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job, JobType } from 'bullmq';
 import { Logger } from '@nestjs/common';
-
-export interface QueueJob {
-  id: string;
-  name: string;
-  data: any;
-  opts?: any;
-}
-
-export interface QueueStats {
-  waiting: number;
-  active: number;
-  completed: number;
-  failed: number;
-  delayed: number;
-  paused: number;
-}
+import {
+  EmailJobData,
+  NotificationJobData,
+  PropertyJobData,
+  UserJobData,
+  SearchJobData,
+  FileJobData,
+  MessageJobData,
+  QueueJobOptions,
+  QueueStats,
+  JobStatus,
+} from '../../common/types/queue.types';
 
 @Injectable()
 export class QueueService {
@@ -30,10 +26,11 @@ export class QueueService {
     @InjectQueue('user') private readonly userQueue: Queue,
     @InjectQueue('search') private readonly searchQueue: Queue,
     @InjectQueue('file') private readonly fileQueue: Queue,
+    @InjectQueue('message') private readonly messageQueue: Queue,
   ) {}
 
   // Email queue methods
-  async addEmailJob(data: any, opts?: any): Promise<Job> {
+  async addEmailJob(data: EmailJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.emailQueue.add('send-email', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -47,7 +44,7 @@ export class QueueService {
     return await this.emailQueue.getJob(jobId);
   }
 
-  async getEmailJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getEmailJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.emailQueue.getJobs([status as JobType], start, end);
   }
 
@@ -72,7 +69,7 @@ export class QueueService {
   }
 
   // Notification queue methods
-  async addNotificationJob(data: any, opts?: any): Promise<Job> {
+  async addNotificationJob(data: NotificationJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.notificationQueue.add('send-notification', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -86,7 +83,7 @@ export class QueueService {
     return await this.notificationQueue.getJob(jobId);
   }
 
-  async getNotificationJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getNotificationJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.notificationQueue.getJobs([status as JobType], start, end);
   }
 
@@ -111,7 +108,7 @@ export class QueueService {
   }
 
   // Property queue methods
-  async addPropertyJob(data: any, opts?: any): Promise<Job> {
+  async addPropertyJob(data: PropertyJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.propertyQueue.add('process-property', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -121,7 +118,7 @@ export class QueueService {
     return job;
   }
 
-  async addPropertyIndexJob(propertyId: string, opts?: any): Promise<Job> {
+  async addPropertyIndexJob(propertyId: string, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.propertyQueue.add('index-property', { propertyId }, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -131,7 +128,7 @@ export class QueueService {
     return job;
   }
 
-  async addPropertyImageProcessJob(propertyId: string, imageUrls: string[], opts?: any): Promise<Job> {
+  async addPropertyImageProcessJob(propertyId: string, imageUrls: string[], opts?: QueueJobOptions): Promise<Job> {
     const job = await this.propertyQueue.add('process-images', { propertyId, imageUrls }, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -145,7 +142,7 @@ export class QueueService {
     return await this.propertyQueue.getJob(jobId);
   }
 
-  async getPropertyJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getPropertyJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.propertyQueue.getJobs([status as JobType], start, end);
   }
 
@@ -170,7 +167,7 @@ export class QueueService {
   }
 
   // User queue methods
-  async addUserJob(data: any, opts?: any): Promise<Job> {
+  async addUserJob(data: UserJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.userQueue.add('process-user', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -180,7 +177,7 @@ export class QueueService {
     return job;
   }
 
-  async addUserWelcomeJob(userId: string, email: string, opts?: any): Promise<Job> {
+  async addUserWelcomeJob(userId: string, email: string, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.userQueue.add('welcome-user', { userId, email }, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -190,7 +187,7 @@ export class QueueService {
     return job;
   }
 
-  async addUserProfileUpdateJob(userId: string, profileData: any, opts?: any): Promise<Job> {
+  async addUserProfileUpdateJob(userId: string, profileData: Record<string, unknown>, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.userQueue.add('update-profile', { userId, profileData }, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -204,7 +201,7 @@ export class QueueService {
     return await this.userQueue.getJob(jobId);
   }
 
-  async getUserJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getUserJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.userQueue.getJobs([status as JobType], start, end);
   }
 
@@ -229,7 +226,7 @@ export class QueueService {
   }
 
   // Search queue methods
-  async addSearchJob(data: any, opts?: any): Promise<Job> {
+  async addSearchJob(data: SearchJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.searchQueue.add('process-search', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -239,7 +236,7 @@ export class QueueService {
     return job;
   }
 
-  async addSearchIndexJob(searchData: any, opts?: any): Promise<Job> {
+  async addSearchIndexJob(searchData: SearchJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.searchQueue.add('index-search', searchData, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -253,7 +250,7 @@ export class QueueService {
     return await this.searchQueue.getJob(jobId);
   }
 
-  async getSearchJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getSearchJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.searchQueue.getJobs([status as JobType], start, end);
   }
 
@@ -278,7 +275,7 @@ export class QueueService {
   }
 
   // File queue methods
-  async addFileJob(data: any, opts?: any): Promise<Job> {
+  async addFileJob(data: FileJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.fileQueue.add('process-file', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -288,7 +285,7 @@ export class QueueService {
     return job;
   }
 
-  async addFileUploadJob(fileData: any, opts?: any): Promise<Job> {
+  async addFileUploadJob(fileData: FileJobData, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.fileQueue.add('upload-file', fileData, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -298,7 +295,7 @@ export class QueueService {
     return job;
   }
 
-  async addFileProcessJob(fileId: string, processType: string, opts?: any): Promise<Job> {
+  async addFileProcessJob(fileId: string, processType: string, opts?: QueueJobOptions): Promise<Job> {
     const job = await this.fileQueue.add('process-file', { fileId, processType }, {
       removeOnComplete: 100,
       removeOnFail: 50,
@@ -312,7 +309,7 @@ export class QueueService {
     return await this.fileQueue.getJob(jobId);
   }
 
-  async getFileJobs(status: string, start = 0, end = 100): Promise<Job[]> {
+  async getFileJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
     return await this.fileQueue.getJobs([status as JobType], start, end);
   }
 
@@ -324,6 +321,45 @@ export class QueueService {
       this.fileQueue.getFailed(),
       this.fileQueue.getDelayed(),
       this.fileQueue.getWaiting(), // getPaused() doesn't exist, using getWaiting() as fallback
+    ]);
+
+    return {
+      waiting: waiting.length,
+      active: active.length,
+      completed: completed.length,
+      failed: failed.length,
+      delayed: delayed.length,
+      paused: paused.length,
+    };
+  }
+
+  // Message queue methods
+  async addMessageJob(data: MessageJobData, opts?: QueueJobOptions): Promise<Job> {
+    const job = await this.messageQueue.add('process-message', data, {
+      removeOnComplete: 100,
+      removeOnFail: 50,
+      ...opts,
+    });
+    this.logger.log(`Added message job: ${job.id}`);
+    return job;
+  }
+
+  async getMessageJob(jobId: string): Promise<Job | null> {
+    return await this.messageQueue.getJob(jobId);
+  }
+
+  async getMessageJobs(status: JobStatus, start = 0, end = 100): Promise<Job[]> {
+    return await this.messageQueue.getJobs([status as JobType], start, end);
+  }
+
+  async getMessageQueueStats(): Promise<QueueStats> {
+    const [waiting, active, completed, failed, delayed, paused] = await Promise.all([
+      this.messageQueue.getWaiting(),
+      this.messageQueue.getActive(),
+      this.messageQueue.getCompleted(),
+      this.messageQueue.getFailed(),
+      this.messageQueue.getDelayed(),
+      this.messageQueue.getWaiting(), // getPaused() doesn't exist, using getWaiting() as fallback
     ]);
 
     return {
@@ -383,6 +419,8 @@ export class QueueService {
         return this.searchQueue;
       case 'file':
         return this.fileQueue;
+      case 'message':
+        return this.messageQueue;
       default:
         return null;
     }
@@ -390,13 +428,14 @@ export class QueueService {
 
   // Get all queue statistics
   async getAllQueueStats(): Promise<Record<string, QueueStats>> {
-    const [email, notification, property, user, search, file] = await Promise.all([
+    const [email, notification, property, user, search, file, message] = await Promise.all([
       this.getEmailQueueStats(),
       this.getNotificationQueueStats(),
       this.getPropertyQueueStats(),
       this.getUserQueueStats(),
       this.getSearchQueueStats(),
       this.getFileQueueStats(),
+      this.getMessageQueueStats(),
     ]);
 
     return {
@@ -406,6 +445,7 @@ export class QueueService {
       user,
       search,
       file,
+      message,
     };
   }
 } 

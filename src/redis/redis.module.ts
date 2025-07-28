@@ -65,6 +65,7 @@ import { UserProcessor } from './processors/user.processor';
       { name: 'user' },
       { name: 'search' },
       { name: 'file' },
+      { name: 'message' },
     ),
   ],
   providers: [

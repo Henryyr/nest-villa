@@ -1,13 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { CacheService } from '../cache.service';
+import { CacheService, CachedUser } from '../cache.service';
 import { PubSubService } from '../pubsub.service';
 
 export interface UserJobData {
   userId: string;
   action: 'welcome' | 'profile-update' | 'account-deletion' | 'data-export';
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface WelcomeUserData {
@@ -17,7 +17,7 @@ export interface WelcomeUserData {
 
 export interface ProfileUpdateData {
   userId: string;
-  profileData: any;
+  profileData: Record<string, unknown>;
 }
 
 @Processor('user')
@@ -182,13 +182,14 @@ export class UserProcessor extends WorkerHost {
     // Simulate updating user cache
     const userData = await this.getUserData(userId);
     if (userData) {
-      await this.cacheService.cacheUser(userId, userData);
+      // Type assertion since we know the structure matches CachedUser
+      await this.cacheService.cacheUser(userId, userData as CachedUser);
     }
   }
 
-  private async updateProfileData(userId: string, profileData: any): Promise<void> {
+  private async updateProfileData(userId: string, profileData: Record<string, unknown>): Promise<void> {
     // Simulate updating profile data
-    this.logger.log(`Updating profile data for user: ${userId}`);
+    this.logger.log(`Updating profile data for user: ${userId}`, { profileData });
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
@@ -210,7 +211,7 @@ export class UserProcessor extends WorkerHost {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
-  private async exportUserData(userId: string): Promise<any> {
+  private async exportUserData(userId: string): Promise<Record<string, unknown>> {
     // Simulate exporting user data
     this.logger.log(`Exporting data for user: ${userId}`);
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -227,7 +228,7 @@ export class UserProcessor extends WorkerHost {
     };
   }
 
-  private async generateExportFile(userData: any): Promise<string> {
+  private async generateExportFile(userData: Record<string, unknown>): Promise<string> {
     // Simulate generating export file
     this.logger.log(`Generating export file for user: ${userData.userId}`);
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -235,7 +236,7 @@ export class UserProcessor extends WorkerHost {
     return `exports/user-${userData.userId}-${Date.now()}.json`;
   }
 
-  private async getUserData(userId: string): Promise<any> {
+  private async getUserData(userId: string): Promise<Record<string, unknown>> {
     // Simulate getting user data
     return {
       id: userId,

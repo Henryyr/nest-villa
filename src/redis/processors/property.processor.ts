@@ -1,13 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { CacheService } from '../cache.service';
+import { CacheService, CachedProperty } from '../cache.service';
 import { PubSubService } from '../pubsub.service';
 
 export interface PropertyJobData {
   propertyId: string;
   action: 'index' | 'update' | 'delete' | 'process-images';
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface PropertyImageProcessData {
@@ -106,7 +106,9 @@ export class PropertyProcessor extends WorkerHost {
     this.logger.log(`Updating property: ${propertyId}`);
     
     // Update property data
-    await this.updatePropertyData(propertyId, data);
+    if (data) {
+      await this.updatePropertyData(propertyId, data);
+    }
     
     // Update cache
     await this.updatePropertyCache(propertyId);
@@ -114,7 +116,7 @@ export class PropertyProcessor extends WorkerHost {
     // Publish update
     await this.pubSubService.publishPropertyUpdate(propertyId, {
       action: 'updated',
-      data,
+      data: data || {},
       timestamp: Date.now(),
     });
     
@@ -151,7 +153,8 @@ export class PropertyProcessor extends WorkerHost {
     // Simulate property data retrieval and caching
     const propertyData = await this.getPropertyData(propertyId);
     if (propertyData) {
-      await this.cacheService.cacheProperty(propertyId, propertyData);
+      // Type assertion since we know the structure matches CachedProperty
+      await this.cacheService.cacheProperty(propertyId, propertyData as CachedProperty);
     }
   }
 
@@ -177,9 +180,9 @@ export class PropertyProcessor extends WorkerHost {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  private async updatePropertyData(propertyId: string, data: any): Promise<void> {
+  private async updatePropertyData(propertyId: string, data: Record<string, unknown>): Promise<void> {
     // Simulate updating property data
-    this.logger.log(`Updating property data for: ${propertyId}`);
+    this.logger.log(`Updating property data for: ${propertyId}`, { data });
     await new Promise(resolve => setTimeout(resolve, 300));
   }
 
@@ -189,7 +192,7 @@ export class PropertyProcessor extends WorkerHost {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
-  private async getPropertyData(propertyId: string): Promise<any> {
+  private async getPropertyData(propertyId: string): Promise<Record<string, unknown>> {
     // Simulate getting property data
     return {
       id: propertyId,

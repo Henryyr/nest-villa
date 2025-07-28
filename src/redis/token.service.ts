@@ -7,7 +7,7 @@ export interface TokenData {
   userId: string;
   email: string;
   type: TokenType;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: number;
   expiresAt: number;
 }
@@ -41,7 +41,7 @@ export class TokenService {
     email: string,
     type: TokenType,
     ttl: number = 3600, // 1 hour default
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ): Promise<string> {
     const token = this.generateToken();
     const tokenKey = `${this.TOKEN_PREFIX}${token}`;
@@ -165,7 +165,7 @@ export class TokenService {
   }
 
   // Access token methods
-  async createAccessToken(userId: string, email: string, metadata?: Record<string, any>): Promise<string> {
+  async createAccessToken(userId: string, email: string, metadata?: Record<string, unknown>): Promise<string> {
     return await this.createToken(userId, email, TokenType.ACCESS_TOKEN, 3600, metadata); // 1 hour
   }
 
@@ -175,7 +175,7 @@ export class TokenService {
   }
 
   // Refresh token methods
-  async createRefreshToken(userId: string, email: string, metadata?: Record<string, any>): Promise<string> {
+  async createRefreshToken(userId: string, email: string, metadata?: Record<string, unknown>): Promise<string> {
     return await this.createToken(userId, email, TokenType.REFRESH_TOKEN, 604800, metadata); // 7 days
   }
 
@@ -185,8 +185,8 @@ export class TokenService {
   }
 
   // API token methods
-  async createApiToken(userId: string, email: string, metadata?: Record<string, any>): Promise<string> {
-    return await this.createToken(userId, email, TokenType.API_TOKEN, 2592000, metadata); // 30 days
+  async createApiToken(userId: string, email: string, metadata?: Record<string, unknown>): Promise<string> {
+    return await this.createToken(userId, email, TokenType.API_TOKEN, 2592000, metadata); // 7 days
   }
 
   async validateApiToken(token: string): Promise<TokenData | null> {
@@ -195,7 +195,7 @@ export class TokenService {
   }
 
   // Invitation token methods
-  async createInvitationToken(userId: string, email: string, metadata?: Record<string, any>): Promise<string> {
+  async createInvitationToken(userId: string, email: string, metadata?: Record<string, unknown>): Promise<string> {
     return await this.createToken(userId, email, TokenType.INVITATION_TOKEN, 604800, metadata); // 7 days
   }
 
@@ -205,7 +205,7 @@ export class TokenService {
   }
 
   // Two-factor authentication token methods
-  async createTwoFactorToken(userId: string, email: string, metadata?: Record<string, any>): Promise<string> {
+  async createTwoFactorToken(userId: string, email: string, metadata?: Record<string, unknown>): Promise<string> {
     return await this.createToken(userId, email, TokenType.TWO_FACTOR_AUTH, 300, metadata); // 5 minutes
   }
 
