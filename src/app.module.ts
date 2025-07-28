@@ -7,6 +7,7 @@ import { PropertyModule } from './property/property.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { RedisModule } from './redis/redis.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RedisModule } from './redis/redis.module';
     WishlistModule,
     FavoriteModule,
     RedisModule,
+    MessageModule
   ],
   controllers: [],
   providers: [],
