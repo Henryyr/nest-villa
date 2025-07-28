@@ -1,7 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { CacheService, CachedProperty } from '../cache.service';
+import { CacheService } from '../cache.service';
+import { CachedProperty } from 'common/interfaces/cache.interface';
 import { PubSubService } from '../pubsub.service';
 
 export interface PropertyJobData {

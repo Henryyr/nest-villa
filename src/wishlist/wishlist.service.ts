@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { WishlistRepository } from './wishlist.repository';
-import { FindAllOptions, WishlistWithProperty } from '../../common/types';
+import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
+import { WishlistWithProperty } from '../../common/types/wishlist-with-property.type';
 import { WishlistResponseDto } from './dto/wishlist-response.dto';
 import { Wishlist } from '@prisma/client';
 import { CacheService } from '../redis/cache.service';

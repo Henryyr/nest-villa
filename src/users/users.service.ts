@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundError, ConflictError } from '../../common/types/error.types';
 import { UsersRepository } from './users.repository';
-import { FindAllOptions } from '../../common/types';
+import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto, UserListResponseDto } from './dto/user-response.dto';
-import { CacheService, CachedUser } from '../redis/cache.service';
+import { CacheService } from '../redis/cache.service';
+import { CachedUser } from 'common/interfaces/cache.interface';
 import { SessionService } from '../redis/session.service';
 import { QueueService } from '../redis/queue.service';
 

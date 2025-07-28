@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FindAllOptions } from '../../common/types';
+import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

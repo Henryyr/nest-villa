@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-
-export interface SessionData {
-  userId: string;
-  email: string;
-  role: string;
-  lastActivity: number;
-  ipAddress?: string;
-  userAgent?: string;
-}
+import { SessionData } from 'common/interfaces/session-data.interface';
 
 @Injectable()
 export class SessionService {

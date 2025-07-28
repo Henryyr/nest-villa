@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { FavoriteRepository } from './favorite.repository';
-import { FavoriteWithProperty, FindAllOptions } from '../../common/types';
+import { FavoriteWithProperty } from '../../common/types/favorite-with-property.type';
+import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { FavoriteResponseDto } from './dto/favorite-response.dto';
 import { Favorite } from '@prisma/client';
 import { CacheService } from '../redis/cache.service';

@@ -1,21 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-
-export interface RateLimitConfig {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Maximum requests per window
-  skipSuccessfulRequests?: boolean;
-  skipFailedRequests?: boolean;
-  keyGenerator?: (request: Record<string, unknown>) => string;
-}
-
-export interface RateLimitResult {
-  limit: number;
-  remaining: number;
-  reset: number;
-  retryAfter?: number;
-}
+import { RateLimitConfig, RateLimitResult } from 'common/interfaces/rate-limit.interface';
 
 @Injectable()
 export class RateLimitService {
