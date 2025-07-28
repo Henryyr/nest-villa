@@ -5,10 +5,18 @@ import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto, UserListResponseDto } from './dto/user-response.dto';
+import { CacheService, CachedUser } from '../redis/cache.service';
+import { SessionService } from '../redis/session.service';
+import { QueueService } from '../redis/queue.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private usersRepository: UsersRepository,
+    private cacheService: CacheService,
+    private sessionService: SessionService,
+    private queueService: QueueService,
+  ) {}
 
   async findAll(options: FindAllOptions = {}): Promise<UserListResponseDto> {
     const result = await this.usersRepository.findAll(options);
@@ -19,8 +27,26 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserResponseDto> {
+    // Check cache first
+    const cached = await this.cacheService.getCachedUser(id);
+    if (cached) {
+      return {
+        id: cached.id,
+        name: cached.name,
+        email: cached.email,
+        phone: cached.phone,
+        role: cached.role as 'ADMIN' | 'OWNER' | 'CUSTOMER',
+        avatarUrl: cached.avatarUrl,
+        createdAt: cached.createdAt,
+        updatedAt: cached.updatedAt,
+      };
+    }
+
     const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundException('User not found');
+    
+    // Cache user data
+    await this.cacheService.cacheUser(id, user);
     return this.toUserResponseDto(user);
   }
 
@@ -34,7 +60,15 @@ export class UsersService {
     // Check for duplicate email
     const existing = await this.usersRepository.findByEmail(data.email);
     if (existing) throw new ConflictException('Email already in use');
+    
     const user = await this.usersRepository.createUser(data);
+    
+    // Cache user data
+    await this.cacheService.cacheUser(user.id, user as CachedUser);
+    
+    // Send welcome email via queue
+    await this.queueService.addUserWelcomeJob(user.id, user.email);
+    
     return this.toUserResponseDto(user);
   }
 
@@ -42,7 +76,18 @@ export class UsersService {
     // Check if user exists
     const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundException('User not found');
+    
     const updated = await this.usersRepository.updateUser(id, data);
+    
+    // Invalidate cache
+    await this.cacheService.invalidateUserCache(id);
+    
+    // Re-cache updated user
+    await this.cacheService.cacheUser(id, updated as CachedUser);
+    
+    // Add profile update job to queue
+    await this.queueService.addUserProfileUpdateJob(id, data);
+    
     return this.toUserResponseDto(updated);
   }
 
@@ -50,7 +95,21 @@ export class UsersService {
     // Check if user exists
     const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundException('User not found');
+    
     const deleted = await this.usersRepository.deleteUser(id);
+    
+    // Remove from cache
+    await this.cacheService.invalidateUserCache(id);
+    
+    // Delete all user sessions
+    await this.sessionService.deleteUserSessions(id);
+    
+    // Add account deletion job to queue
+    await this.queueService.addUserJob({
+      userId: id,
+      action: 'account-deletion',
+    });
+    
     return this.toUserResponseDto(deleted);
   }
 

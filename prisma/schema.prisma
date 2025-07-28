@@ -169,12 +169,13 @@ model Message {
   id         String   @id @default(uuid())
   senderId   String
   receiverId String
-  propertyId String
   content    String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  propertyId String?
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  property   Property? @relation(fields: [propertyId], references: [id])
 }
 
 // --- AVAILABILITY (Ketersediaan properti) ---

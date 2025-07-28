@@ -8,14 +8,21 @@ export class FavoriteRepository {
   constructor(private prisma: PrismaService) {}
 
   async addToFavorite(userId: string, propertyId: string) {
-    return this.prisma.favorite.create({ data: { userId, propertyId } });
+    console.log(`Adding favorite: userId=${userId}, propertyId=${propertyId}`);
+    const result = await this.prisma.favorite.create({ data: { userId, propertyId } });
+    console.log(`Successfully added favorite with id: ${result.id}`);
+    return result;
   }
 
   async removeFromFavorite(userId: string, propertyId: string) {
-    return this.prisma.favorite.deleteMany({ where: { userId, propertyId } });
+    console.log(`Removing favorite: userId=${userId}, propertyId=${propertyId}`);
+    const result = await this.prisma.favorite.deleteMany({ where: { userId, propertyId } });
+    console.log(`Removed ${result.count} favorites`);
+    return result;
   }
 
   async getFavorite(userId: string, options: FindAllOptions = {}) {
+    console.log(`Getting favorites for userId=${userId}, options=${JSON.stringify(options)}`);
     const { search, page = 1, limit = 10 } = options;
 
     const where: Prisma.FavoriteWhereInput = {
@@ -30,7 +37,7 @@ export class FavoriteRepository {
       }),
     };
 
-    return this.prisma.favorite.findMany({
+    const result = await this.prisma.favorite.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
@@ -43,13 +50,22 @@ export class FavoriteRepository {
         },
       },
     });
+    
+    console.log(`Found ${result.length} favorites for userId=${userId}`);
+    return result;
   }
 
   async findByUserAndProperty(userId: string, propertyId: string) {
-    return this.prisma.favorite.findFirst({ where: { userId, propertyId } });
+    console.log(`Checking if favorite exists: userId=${userId}, propertyId=${propertyId}`);
+    const result = await this.prisma.favorite.findFirst({ where: { userId, propertyId } });
+    console.log(`Favorite exists: ${!!result}`);
+    return result;
   }
 
   async propertyExists(propertyId: string) {
-    return this.prisma.property.findUnique({ where: { id: propertyId } });
+    console.log(`Checking if property exists: propertyId=${propertyId}`);
+    const result = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    console.log(`Property exists: ${!!result}`);
+    return result;
   }
 }

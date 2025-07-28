@@ -38,3 +38,11 @@ export type PropertyWithRelations = Property & {
   images: PropertyImage[];
   villa: Villa | null;
 };
+
+export interface EphemeralMessageJob {
+  to: string;
+  from: string;
+  content: string;
+  propertyId?: string;
+  timestamp: number;
+}

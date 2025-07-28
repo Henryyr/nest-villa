@@ -5,9 +5,12 @@ import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
+    CacheModule.register(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -16,9 +19,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    RedisModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository],
+  providers: [
+    AuthService, 
+    AuthRepository,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

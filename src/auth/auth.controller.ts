@@ -29,8 +29,36 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User logged in successfully', type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  login(@Body() body: LoginAuthDto): Promise<AuthResponseDto> {
-    return this.authService.login(body);
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
+  login(@Body() body: LoginAuthDto, @Req() req: Request): Promise<AuthResponseDto> {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    return this.authService.login(body, ipAddress);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'User logged out successfully' })
+  logout(@Body() body: { sessionId: string }): Promise<void> {
+    return this.authService.logout(body.sessionId);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Password reset email sent' })
+  @ApiResponse({ status: 429, description: 'Too many reset requests' })
+  forgotPassword(@Body() body: { email: string }): Promise<{ message: string }> {
+    return this.authService.requestPasswordReset(body.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+  resetPassword(@Body() body: { token: string; newPassword: string }): Promise<{ message: string }> {
+    return this.authService.resetPassword(body.token, body.newPassword);
   }
 
   @Get('me')

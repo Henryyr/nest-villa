@@ -35,6 +35,9 @@ export class AuthResponseDto {
 
   @ApiProperty({ description: 'User profile information', type: UserProfileDto })
   user: UserProfileDto;
+
+  @ApiProperty({ description: 'Session ID for tracking', required: false })
+  sessionId?: string;
 }
 
 export class RegisterResponseDto {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { PropertyService } from './property.service';
 import { PropertyResponseDto } from './dto/property-response.dto';
@@ -18,12 +18,8 @@ export class PropertyController {
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
   @HttpCode(HttpStatus.OK)
-  findAll(
-    @Query('search') search?: string,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-  ): Promise<{ data: PropertyResponseDto[]; total: number; page: number; limit: number }> {
-    return this.propertyService.findAll({ search, page: +page, limit: +limit });
+  findAll(): Promise<PropertyResponseDto[]> {
+    return this.propertyService.findAll();
   }
 
   @Get(':id')
@@ -37,27 +33,27 @@ export class PropertyController {
 
   @Post()
   @ApiOperation({ summary: 'Create property' })
-  @ApiResponse({ status: 201, description: 'Property created', type: PropertyResponseDto })
+  @ApiResponse({ status: 201, description: 'Property created', type: PropertyDetailDto })
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreatePropertyDto): Promise<PropertyResponseDto> {
+  create(@Body() dto: CreatePropertyDto): Promise<PropertyDetailDto> {
     return this.propertyService.createProperty(dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update property' })
-  @ApiResponse({ status: 200, description: 'Property updated', type: PropertyResponseDto })
+  @ApiResponse({ status: 200, description: 'Property updated', type: PropertyDetailDto })
   @ApiResponse({ status: 404, description: 'Property not found' })
   @HttpCode(HttpStatus.OK)
-  update(@Param('id') id: string, @Body() dto: UpdatePropertyDto): Promise<PropertyResponseDto> {
+  update(@Param('id') id: string, @Body() dto: UpdatePropertyDto): Promise<PropertyDetailDto> {
     return this.propertyService.updateProperty(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete property' })
-  @ApiResponse({ status: 200, description: 'Property deleted', type: PropertyResponseDto })
+  @ApiResponse({ status: 200, description: 'Property deleted' })
   @ApiResponse({ status: 404, description: 'Property not found' })
   @HttpCode(HttpStatus.OK)
-  remove(@Param('id') id: string): Promise<PropertyResponseDto> {
+  remove(@Param('id') id: string): Promise<void> {
     return this.propertyService.deleteProperty(id);
   }
 } 

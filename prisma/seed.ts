@@ -1,119 +1,172 @@
-import { PrismaClient, PropertyType, Role } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { PrismaClient, Role, PropertyType, PaymentStatus } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const plainPassword = 'owner123';
-  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+  console.log('🌱 Start seeding...');
 
-  const owner = await prisma.user.create({
-    data: {
-      name: 'Owner Villa',
-      email: 'owner@villa.com',
-      password: hashedPassword, // yang dikirim ke DB adalah hash
-      phone: '081234567890',
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
+  // --- Create Users ---
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      name: 'Admin User',
+      email: 'admin@example.com',
+      password: hashedPassword,
+      phone: '081111111111',
+      role: Role.ADMIN,
+    },
+  });
+
+  const owner = await prisma.user.upsert({
+    where: { email: 'owner@example.com' },
+    update: {},
+    create: {
+      name: 'Owner User',
+      email: 'owner@example.com',
+      password: hashedPassword,
+      phone: '082222222222',
       role: Role.OWNER,
     },
   });
 
-  const ownerId = owner.id;
+  const customer = await prisma.user.upsert({
+    where: { email: 'customer@example.com' },
+    update: {},
+    create: {
+      name: 'Customer User',
+      email: 'customer@example.com',
+      password: hashedPassword,
+      phone: '083333333333',
+      role: Role.CUSTOMER,
+    },
+  });
 
-  const properties = [
-    {
-      title: 'Villa Mewah Bali',
-      description: 'Villa mewah dengan pemandangan laut di Bali',
-      location: 'Bali',
-      price: 5000000,
-      type: PropertyType.VILLA,
-      ownerId,
-    },
-    {
-      title: 'Rumah Keluarga Jakarta',
-      description: 'Rumah nyaman untuk keluarga di Jakarta Selatan',
-      location: 'Jakarta Selatan',
-      price: 2000000,
-      type: PropertyType.HOUSE,
-      ownerId,
-    },
-    {
-      title: 'Apartemen Modern Surabaya',
-      description: 'Apartemen modern di pusat kota Surabaya',
-      location: 'Surabaya',
-      price: 1500000,
-      type: PropertyType.APARTMENT,
-      ownerId,
-    },
-    {
-      title: 'Villa Asri Ubud',
-      description: 'Villa asri dengan suasana alam di Ubud',
-      location: 'Ubud',
-      price: 3500000,
-      type: PropertyType.VILLA,
-      ownerId,
-    },
-    {
-      title: 'Rumah Minimalis Bandung',
-      description: 'Rumah minimalis di kawasan strategis Bandung',
+  // --- Facilities ---
+  const facilities = await prisma.facility.createMany({
+    data: [
+      { name: 'WiFi' },
+      { name: 'Kolam Renang' },
+      { name: 'AC' },
+      { name: 'Parkir' },
+    ],
+    skipDuplicates: true,
+  });
+
+  // --- Create Property + Villa ---
+  const property = await prisma.property.create({
+    data: {
+      title: 'Villa Mawar',
+      description: 'Villa sejuk dengan kolam renang',
       location: 'Bandung',
-      price: 1800000,
-      type: PropertyType.HOUSE,
-      ownerId,
-    },
-    {
-      title: 'Apartemen View Kota Medan',
-      description: 'Apartemen dengan view kota Medan',
-      location: 'Medan',
-      price: 1200000,
-      type: PropertyType.APARTMENT,
-      ownerId,
-    },
-    {
-      title: 'Villa Private Pool Lombok',
-      description: 'Villa dengan private pool di Lombok',
-      location: 'Lombok',
-      price: 4000000,
+      price: 1500000,
       type: PropertyType.VILLA,
-      ownerId,
+      ownerId: owner.id,
+      facilities: {
+        connect: await prisma.facility.findMany({
+          where: {
+            name: { in: ['WiFi', 'Kolam Renang'] },
+          },
+        }).then(facs => facs.map(f => ({ id: f.id }))),
+      },
+      images: {
+        create: [
+          { url: 'https://via.placeholder.com/600x400' },
+          { url: 'https://via.placeholder.com/600x400?2' },
+        ],
+      },
+      villa: {
+        create: {
+          bedrooms: 3,
+          bathrooms: 2,
+          hasSwimmingPool: true,
+        },
+      },
+      availabilities: {
+        create: [
+          {
+            startDate: new Date('2025-08-01'),
+            endDate: new Date('2025-08-15'),
+          },
+        ],
+      },
     },
-    {
-      title: 'Rumah Cluster Bekasi',
-      description: 'Rumah cluster aman dan nyaman di Bekasi',
-      location: 'Bekasi',
-      price: 1700000,
-      type: PropertyType.HOUSE,
-      ownerId,
-    },
-    {
-      title: 'Apartemen Dekat Kampus Yogyakarta',
-      description: 'Apartemen strategis dekat kampus di Yogyakarta',
-      location: 'Yogyakarta',
-      price: 1300000,
-      type: PropertyType.APARTMENT,
-      ownerId,
-    },
-    {
-      title: 'Villa Pantai Anyer',
-      description: 'Villa dengan akses langsung ke pantai Anyer',
-      location: 'Anyer',
-      price: 3000000,
-      type: PropertyType.VILLA,
-      ownerId,
-    },
-  ];
+  });
 
-  for (const data of properties) {
-    await prisma.property.create({ data });
-  }
+  // --- Wishlist & Favorite ---
+  await prisma.wishlist.create({
+    data: {
+      userId: customer.id,
+      propertyId: property.id,
+    },
+  });
 
-  console.log('Seeded 1 owner & 10 properties!');
+  await prisma.favorite.create({
+    data: {
+      userId: customer.id,
+      propertyId: property.id,
+    },
+  });
+
+  // --- Booking + Payment ---
+  const booking = await prisma.booking.create({
+    data: {
+      userId: customer.id,
+      propertyId: property.id,
+      startDate: new Date('2025-08-05'),
+      endDate: new Date('2025-08-10'),
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      bookingId: booking.id,
+      amount: 7500000,
+      method: 'Credit Card',
+      status: PaymentStatus.PAID,
+      paidAt: new Date(),
+    },
+  });
+
+  // --- Review ---
+  await prisma.review.create({
+    data: {
+      userId: customer.id,
+      propertyId: property.id,
+      rating: 5,
+      comment: 'Tempatnya nyaman dan bersih!',
+    },
+  });
+
+  // --- Notification ---
+  await prisma.notification.create({
+    data: {
+      userId: customer.id,
+      content: 'Booking kamu telah dikonfirmasi.',
+    },
+  });
+
+  // --- Message (chat) ---
+  await prisma.message.create({
+    data: {
+      senderId: customer.id,
+      receiverId: owner.id,
+      propertyId: property.id,
+      content: 'Apakah villa ini tersedia untuk tanggal 5 - 10 Agustus?',
+    },
+  });
+
+  console.log('✅ Seeding completed.');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });

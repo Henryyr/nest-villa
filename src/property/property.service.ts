@@ -1,32 +1,48 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PropertyRepository } from './property.repository';
-import { FindAllOptions, PropertyWithRelations } from '../../common/types';
-import { PropertyResponseDto } from './dto/property-response.dto';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { PropertyType, Prisma } from '@prisma/client';
+import { PropertyResponseDto } from './dto/property-response.dto';
 import { PropertyDetailDto } from './dto/property-detail.dto';
+import { Prisma, PropertyType } from '@prisma/client';
+
+interface PropertyWithImages {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  price: number;
+  type: PropertyType;
+  images: Array<{ id: string; url: string }>;
+  villa?: { id: string; bedrooms: number; bathrooms: number; hasSwimmingPool: boolean } | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PropertyWithDetails extends PropertyWithImages {
+  facilities: Array<{ id: string; name: string }>;
+  owner: { id: string; name: string; avatarUrl: string | null };
+}
 
 @Injectable()
 export class PropertyService {
   constructor(private propertyRepository: PropertyRepository) {}
 
-  async findAll(options: FindAllOptions = {}): Promise<{ data: PropertyResponseDto[]; total: number; page: number; limit: number }> {
-    const result = await this.propertyRepository.findAll(options);
-    return {
-      ...result,
-      data: result.data.map(this.toPropertyResponseDto),
-    };
+  async findAll(): Promise<PropertyResponseDto[]> {
+    const result = await this.propertyRepository.findAll();
+    return result.data.map(property => this.toPropertyResponseDto(property));
   }
 
   async findById(id: string): Promise<PropertyDetailDto> {
     const property = await this.propertyRepository.findById(id);
-    if (!property) throw new NotFoundException('Property not found');
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
     return this.toPropertyDetailDto(property);
   }
 
-  async createProperty(data: CreatePropertyDto): Promise<PropertyResponseDto> {
-    const prismaData = {
+  async createProperty(data: CreatePropertyDto): Promise<PropertyDetailDto> {
+    const propertyData: Prisma.PropertyCreateInput = {
       title: data.title,
       description: data.description,
       location: data.location,
@@ -34,75 +50,87 @@ export class PropertyService {
       type: data.type as PropertyType,
       owner: { connect: { id: data.ownerId } },
     };
-    const created = await this.propertyRepository.createProperty(prismaData);
-    const property = await this.propertyRepository.findById(created.id);
-    return this.toPropertyResponseDto(property);
+
+    const property = await this.propertyRepository.createProperty(propertyData);
+    const createdProperty = await this.propertyRepository.findById(property.id);
+    return this.toPropertyDetailDto(createdProperty!);
   }
 
-  async updateProperty(id: string, data: UpdatePropertyDto): Promise<PropertyResponseDto> {
-    const property = await this.propertyRepository.findById(id);
-    if (!property) throw new NotFoundException('Property not found');
-    const prismaData: Prisma.PropertyUpdateInput = {
+  async updateProperty(id: string, data: UpdatePropertyDto): Promise<PropertyDetailDto> {
+    const existingProperty = await this.propertyRepository.findById(id);
+    if (!existingProperty) {
+      throw new NotFoundException('Property not found');
+    }
+
+    const propertyData: Prisma.PropertyUpdateInput = {
       ...(data.title && { title: data.title }),
       ...(data.description && { description: data.description }),
       ...(data.location && { location: data.location }),
       ...(data.price && { price: data.price }),
       ...(data.type && { type: data.type as PropertyType }),
-      ...(data.ownerId && { owner: { connect: { id: data.ownerId } } }),
     };
-    await this.propertyRepository.updateProperty(id, prismaData);
-    const updated = await this.propertyRepository.findById(id);
-    return this.toPropertyResponseDto(updated);
+
+    await this.propertyRepository.updateProperty(id, propertyData);
+    const updatedProperty = await this.propertyRepository.findById(id);
+    return this.toPropertyDetailDto(updatedProperty!);
   }
 
-  async deleteProperty(id: string): Promise<PropertyResponseDto> {
-    const property = await this.propertyRepository.findById(id);
-    if (!property) throw new NotFoundException('Property not found');
-    const deleted = await this.propertyRepository.deleteProperty(id);
-    return this.toPropertyResponseDto(deleted);
+  async deleteProperty(id: string): Promise<void> {
+    const existingProperty = await this.propertyRepository.findById(id);
+    if (!existingProperty) {
+      throw new NotFoundException('Property not found');
+    }
+    await this.propertyRepository.deleteProperty(id);
   }
 
-  private toPropertyResponseDto(property: Partial<PropertyWithRelations> | null | undefined): PropertyResponseDto {
-    if (!property) throw new NotFoundException('Property not found');
+  private toPropertyResponseDto(property: PropertyWithImages): PropertyResponseDto {
     return {
-      id: property.id!,
-      title: property.title!,
-      description: property.description!,
-      location: property.location!,
-      price: property.price!,
-      type: property.type!,
-      images: property.images || [],
-      villa: property.villa || undefined,
-      createdAt: property.createdAt!,
-      updatedAt: property.updatedAt!,
+      id: property.id,
+      title: property.title,
+      description: property.description,
+      location: property.location,
+      price: property.price,
+      type: property.type,
+      images: property.images?.map(img => ({
+        id: img.id,
+        url: img.url,
+      })) || [],
+      villa: property.villa ? {
+        id: property.villa.id,
+        bedrooms: property.villa.bedrooms,
+        bathrooms: property.villa.bathrooms,
+        hasSwimmingPool: property.villa.hasSwimmingPool,
+      } : undefined,
+      createdAt: property.createdAt,
+      updatedAt: property.updatedAt,
     };
   }
 
-  private toPropertyDetailDto(property: Partial<PropertyWithRelations> & {
-    latitude?: number;
-    longitude?: number;
-    facilities?: { name: string }[];
-    owner?: { id: string; name: string; avatarUrl?: string | null };
-  }): PropertyDetailDto {
+  private toPropertyDetailDto(property: PropertyWithDetails): PropertyDetailDto {
     return {
-      id: property.id!,
-      title: property.title!,
-      description: property.description!,
-      location: property.location!,
-      price: property.price!,
-      type: property.type!,
-      latitude: property.latitude ?? 0,
-      longitude: property.longitude ?? 0,
-      images: property.images ? property.images.map(img => img.url) : [],
-      createdAt: property.createdAt!,
-      updatedAt: property.updatedAt!,
-      facilities: property.facilities ? property.facilities.map(f => f.name) : [],
-      villa: property.villa || null,
-      owner: property.owner ? {
+      id: property.id,
+      title: property.title,
+      description: property.description,
+      location: property.location,
+      price: property.price,
+      type: property.type,
+      latitude: 0, // Default value since it's not in the schema
+      longitude: 0, // Default value since it's not in the schema
+      images: property.images?.map(img => img.url) || [],
+      villa: property.villa ? {
+        id: property.villa.id,
+        bedrooms: property.villa.bedrooms,
+        bathrooms: property.villa.bathrooms,
+        hasSwimmingPool: property.villa.hasSwimmingPool,
+      } : null,
+      facilities: property.facilities?.map(facility => facility.name) || [],
+      owner: {
         id: property.owner.id,
         name: property.owner.name,
-        avatarUrl: property.owner.avatarUrl ?? null,
-      } : { id: '', name: '', avatarUrl: null },
+        avatarUrl: property.owner.avatarUrl,
+      },
+      createdAt: property.createdAt,
+      updatedAt: property.updatedAt,
     };
   }
 } 

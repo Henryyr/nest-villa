@@ -38,4 +38,17 @@ export class AuthRepository {
     }
     return userWithoutPassword;
   }
+
+  async updateUser(id: string, data: { password?: string }): Promise<UserProfileDto> {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data,
+    });
+    
+    const { password: _, ...userWithoutPassword } = user;
+    if (typeof _ !== 'string') {
+      throw new Error('Password is missing or invalid');
+    }
+    return userWithoutPassword;
+  }
 }
