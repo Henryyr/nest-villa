@@ -91,7 +91,7 @@ describe('WishlistService Integration', () => {
 
       expect(result.id).toBe(mockWishlist.id);
       expect(result.userId).toBe(mockUser.id);
-      expect(result.propertyId).toBe(mockProperty.id);
+      expect(result.property?.id).toBe(mockProperty.id);
       expect(repository.propertyExists).toHaveBeenCalledWith(mockProperty.id);
       expect(repository.findPropertyById).toHaveBeenCalledWith(mockProperty.id);
       expect(repository.findByUserAndProperty).toHaveBeenCalledWith(mockUser.id, mockProperty.id);
@@ -197,7 +197,7 @@ describe('WishlistService Integration', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(mockWishlist.id);
-      expect(result[0].property.title).toBe(mockProperty.title);
+      expect(result[0].property?.title).toBe(mockProperty.title);
       expect(cacheService.get).toHaveBeenCalledWith(`wishlist:${mockUser.id}:{}`);
     });
 
@@ -226,7 +226,7 @@ describe('WishlistService Integration', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(mockWishlist.id);
-      expect(result[0].property.title).toBe(mockProperty.title);
+      expect(result[0].property?.title).toBe(mockProperty.title);
       expect(repository.getWishlist).toHaveBeenCalledWith(mockUser.id, {});
       expect(cacheService.set).toHaveBeenCalledWith(
         `wishlist:${mockUser.id}:{}`,

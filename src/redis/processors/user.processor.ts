@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CacheService } from '../cache.service';
 import { CachedUser } from '../../../common/interfaces/redis.interface';
 import { PubSubService } from '../pubsub.service';
-import { isCachedUser } from '../../../common/utils/type-guards';
+import { isCachedUser } from '../../../common/guards/type-guards';
 
 export interface UserJobData {
   userId: string;

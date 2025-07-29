@@ -30,7 +30,7 @@ model User {
   password    String
   phone       String
   role        Role       @default(CUSTOMER)
-  avatarUrl   String?    @map("avatar_url")
+  avatarUrl   String?
   properties  Property[] @relation("UserProperties")
   reviews     Review[]
   bookings    Booking[]
@@ -39,8 +39,8 @@ model User {
   notifications Notification[]
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 // --- PROPERTY (Generic) ---
@@ -62,8 +62,8 @@ model Property {
   favorites   Favorite[]
   messages    Message[]
   availabilities Availability[]
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 // --- VILLA (Specific Type) ---
@@ -71,7 +71,7 @@ model Villa {
   id              String   @id
   bedrooms        Int
   bathrooms       Int
-  hasSwimmingPool Boolean  @map("has_swimming_pool")
+  hasSwimmingPool Boolean
   property        Property @relation("PropertyVilla", fields: [id], references: [id], onDelete: Cascade)
 }
 
@@ -92,7 +92,7 @@ model Review {
   propertyId String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 // --- BOOKING (User bookings for properties) ---
@@ -100,12 +100,12 @@ model Booking {
   id         String   @id @default(uuid())
   userId     String
   propertyId String
-  startDate  DateTime @map("start_date")
-  endDate    DateTime @map("end_date")
+  startDate  DateTime
+  endDate    DateTime
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   payment    Payment?
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 // --- FACILITY (Facilities for properties) ---
@@ -122,7 +122,7 @@ model Favorite {
   propertyId String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 // --- WISHLIST (Properti yang ingin dibooking user, niat booking di masa depan) ---
@@ -132,7 +132,7 @@ model Wishlist {
   propertyId String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 // --- PAYMENT (Pembayaran booking) ---
@@ -144,7 +144,7 @@ model Payment {
   method     String
   paidAt     DateTime?
   booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 enum PaymentStatus {
@@ -161,7 +161,7 @@ model Notification {
   content    String
   read       Boolean  @default(false)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }
 
 // --- MESSAGE (Chat antara user dan owner) ---
@@ -182,8 +182,8 @@ model Message {
 model Availability {
   id         String   @id @default(uuid())
   propertyId String
-  startDate  DateTime @map("start_date")
-  endDate    DateTime @map("end_date")
+  startDate  DateTime
+  endDate    DateTime
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now())
 }

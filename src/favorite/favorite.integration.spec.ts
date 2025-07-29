@@ -47,6 +47,15 @@ describe('FavoriteService Integration', () => {
     },
   };
 
+  const mockFavoriteWithPropertyNotNull = {
+    ...mockFavorite,
+    property: {
+      ...mockProperty,
+      images: [],
+      villa: null,
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -91,7 +100,7 @@ describe('FavoriteService Integration', () => {
 
       expect(result.id).toBe(mockFavorite.id);
       expect(result.userId).toBe(mockUser.id);
-      expect(result.propertyId).toBe(mockProperty.id);
+      expect(result.property?.id).toBe(mockProperty.id);
       expect(repository.propertyExists).toHaveBeenCalledWith(mockProperty.id);
       expect(repository.findPropertyById).toHaveBeenCalledWith(mockProperty.id);
       expect(repository.findByUserAndProperty).toHaveBeenCalledWith(mockUser.id, mockProperty.id);
@@ -176,20 +185,7 @@ describe('FavoriteService Integration', () => {
 
   describe('getFavorite', () => {
     it('should return favorites from cache if available', async () => {
-      const cachedFavorites = [
-        {
-          id: mockFavorite.id,
-          userId: mockFavorite.userId,
-          property: {
-            id: mockProperty.id,
-            title: mockProperty.title,
-            location: mockProperty.location,
-            price: mockProperty.price,
-            images: [],
-            villa: null,
-          },
-        },
-      ];
+      const cachedFavorites = [mockFavoriteWithPropertyNotNull];
 
       jest.spyOn(cacheService, 'get').mockResolvedValue(cachedFavorites);
 
@@ -197,12 +193,12 @@ describe('FavoriteService Integration', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(mockFavorite.id);
-      expect(result[0].property.title).toBe(mockProperty.title);
+      expect(result[0].property!.title).toBe(mockProperty.title);
       expect(cacheService.get).toHaveBeenCalledWith(`favorites:${mockUser.id}:{}`);
     });
 
     it('should fetch from database and cache if not in cache', async () => {
-      const mockFavorites = [mockFavoriteWithProperty];
+      const mockFavorites = [mockFavoriteWithPropertyNotNull];
       const expectedResult = [
         {
           id: mockFavorite.id,
@@ -226,7 +222,7 @@ describe('FavoriteService Integration', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(mockFavorite.id);
-      expect(result[0].property.title).toBe(mockProperty.title);
+      expect(result[0].property!.title).toBe(mockProperty.title);
       expect(repository.getFavorites).toHaveBeenCalledWith(mockUser.id, {});
       expect(cacheService.set).toHaveBeenCalledWith(
         `favorites:${mockUser.id}:{}`,
@@ -237,7 +233,7 @@ describe('FavoriteService Integration', () => {
 
     it('should handle search options correctly', async () => {
       const options = { search: 'villa', page: 1, limit: 10 };
-      const mockFavorites = [mockFavoriteWithProperty];
+      const mockFavorites = [mockFavoriteWithPropertyNotNull];
 
       jest.spyOn(cacheService, 'get').mockResolvedValue(null);
       jest.spyOn(repository, 'getFavorites').mockResolvedValue(mockFavorites);

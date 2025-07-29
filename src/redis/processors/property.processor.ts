@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CacheService } from '../cache.service';
 import { CachedProperty } from '../../../common/interfaces/redis.interface';
 import { PubSubService } from '../pubsub.service';
-import { isCachedProperty } from '../../../common/utils/type-guards';
+import { isCachedProperty } from '../../../common/guards/type-guards';
 
 export interface PropertyJobData {
   propertyId: string;
