@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-import { SessionData } from 'common/interfaces/session-data.interface';
+import { SessionData } from '../../common/interfaces/redis.interface';
 
 @Injectable()
 export class SessionService {
@@ -18,8 +18,8 @@ export class SessionService {
     sessionData: SessionData,
     ttl: number = this.DEFAULT_SESSION_TTL,
   ): Promise<void> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
-    const userSessionsKey = `${this.USER_SESSIONS_PREFIX}${sessionData.userId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
+    const userSessionsKey = RedisService.getUserSessionsKey(sessionData.userId);
 
     // Store session data
     await this.redisService.hset(sessionKey, 'data', JSON.stringify(sessionData));
@@ -34,7 +34,7 @@ export class SessionService {
 
   // Get session data
   async getSession(sessionId: string): Promise<SessionData | null> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const sessionData = await this.redisService.hget(sessionKey, 'data');
 
     if (!sessionData) {
@@ -55,7 +55,7 @@ export class SessionService {
 
   // Update session data
   async updateSession(sessionId: string, sessionData: Partial<SessionData>): Promise<void> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const existingData = await this.getSession(sessionId);
 
     if (!existingData) {
@@ -68,11 +68,11 @@ export class SessionService {
 
   // Delete session
   async deleteSession(sessionId: string): Promise<void> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const sessionData = await this.getSession(sessionId);
 
     if (sessionData) {
-      const userSessionsKey = `${this.USER_SESSIONS_PREFIX}${sessionData.userId}`;
+      const userSessionsKey = RedisService.getUserSessionsKey(sessionData.userId);
       await this.redisService.del(sessionKey);
       await this.redisService.srem(userSessionsKey, sessionId);
       this.logger.log(`Deleted session: ${sessionId}`);
@@ -81,24 +81,21 @@ export class SessionService {
 
   // Delete all sessions for a user
   async deleteUserSessions(userId: string): Promise<void> {
-    const userSessionsKey = `${this.USER_SESSIONS_PREFIX}${userId}`;
+    const userSessionsKey = RedisService.getUserSessionsKey(userId);
     const sessionIds = await this.redisService.smembers(userSessionsKey);
 
     if (sessionIds.length > 0) {
-      const pipeline = this.redisService.getClient().pipeline();
-      sessionIds.forEach(sessionId => {
-        const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
-        pipeline.del(sessionKey);
-      });
-      pipeline.del(userSessionsKey);
-      await pipeline.exec();
+      const sessionPattern = RedisService.getSessionKey('*');
+      // Bulk delete all session keys for this user
+      await this.redisService.bulkDeleteByPattern(sessionPattern);
+      await this.redisService.del(userSessionsKey);
       this.logger.log(`Deleted ${sessionIds.length} sessions for user: ${userId}`);
     }
   }
 
   // Get all active sessions for a user
   async getUserSessions(userId: string): Promise<SessionData[]> {
-    const userSessionsKey = `${this.USER_SESSIONS_PREFIX}${userId}`;
+    const userSessionsKey = RedisService.getUserSessionsKey(userId);
     const sessionIds = await this.redisService.smembers(userSessionsKey);
     const sessions: SessionData[] = [];
 
@@ -120,12 +117,12 @@ export class SessionService {
 
   // Extend session TTL
   async extendSession(sessionId: string, ttl: number = this.DEFAULT_SESSION_TTL): Promise<void> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const sessionData = await this.getSession(sessionId);
 
     if (sessionData) {
       await this.redisService.expire(sessionKey, ttl);
-      const userSessionsKey = `${this.USER_SESSIONS_PREFIX}${sessionData.userId}`;
+      const userSessionsKey = RedisService.getUserSessionsKey(sessionData.userId);
       await this.redisService.expire(userSessionsKey, ttl);
     }
   }
@@ -167,7 +164,7 @@ export class SessionService {
 
   // Track session activity
   async trackActivity(sessionId: string, activity: string): Promise<void> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const activityKey = `${sessionKey}:activity`;
     
     await this.redisService.lpush(activityKey, JSON.stringify({
@@ -182,7 +179,7 @@ export class SessionService {
 
   // Get session activity
   async getSessionActivity(sessionId: string): Promise<Record<string, unknown>[]> {
-    const sessionKey = `${this.SESSION_PREFIX}${sessionId}`;
+    const sessionKey = RedisService.getSessionKey(sessionId);
     const activityKey = `${sessionKey}:activity`;
     const activities = await this.redisService.lrange(activityKey, 0, -1);
     

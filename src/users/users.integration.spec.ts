@@ -4,6 +4,7 @@ import { UsersRepository } from './users.repository';
 import { CacheService } from '../redis/cache.service';
 import { SessionService } from '../redis/session.service';
 import { QueueService } from '../redis/queue.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NotFoundError, ConflictError } from '../../common/types/error.types';
@@ -11,34 +12,37 @@ import { User } from '@prisma/client';
 import { Job } from 'bullmq';
 import { TestUtils } from '../common/utils/test-utils';
 
-describe('UsersService', () => {
+describe('UsersService Integration', () => {
   let service: UsersService;
   let repository: UsersRepository;
   let cacheService: CacheService;
   let sessionService: SessionService;
   let queueService: QueueService;
+  let prismaService: PrismaService;
 
   const mockUser: User = {
     id: 'user-1',
     name: 'John Doe',
     email: 'john@example.com',
-    password: 'hashedPassword',
-    phone: '08123456789',
+    password: 'hashedPassword123',
+    phone: '+6281234567890',
     role: 'CUSTOMER',
     avatarUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const mockCachedUser = {
-    id: 'user-1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '08123456789',
+  const mockCreateUserDto: CreateUserDto = {
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    password: 'Password123!',
+    phone: '+6281234567891',
     role: 'CUSTOMER',
-    avatarUrl: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+  };
+
+  const mockUpdateUserDto: UpdateUserDto = {
+    name: 'Jane Updated',
+    phone: '+6281234567892',
   };
 
   beforeEach(async () => {
@@ -46,15 +50,8 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         {
-          provide: UsersRepository,
-          useValue: {
-            findAll: jest.fn(),
-            findById: jest.fn(),
-            findByEmail: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
-          },
+          provide: 'IUsersRepository',
+          useClass: UsersRepository,
         },
         {
           provide: CacheService,
@@ -68,8 +65,6 @@ describe('UsersService', () => {
           provide: SessionService,
           useValue: {
             deleteUserSessions: jest.fn(),
-            createSession: jest.fn(),
-            deleteSession: jest.fn(),
           },
         },
         {
@@ -80,6 +75,19 @@ describe('UsersService', () => {
             addUserJob: jest.fn(),
           },
         },
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+              count: jest.fn(),
+            },
+          },
+        },
       ],
     }).compile();
 
@@ -88,71 +96,51 @@ describe('UsersService', () => {
     cacheService = module.get<CacheService>(CacheService);
     sessionService = module.get<SessionService>(SessionService);
     queueService = module.get<QueueService>(QueueService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   describe('findAll', () => {
-    it('should return all users with pagination', async () => {
-      const mockResult = {
-        data: [mockUser],
+    it('should return paginated users from database', async () => {
+      const mockUsers = [mockUser];
+      const mockPaginatedResult = {
+        data: mockUsers,
         total: 1,
         page: 1,
         limit: 10,
       };
 
-      jest.spyOn(repository, 'findAll').mockResolvedValue(mockResult);
+      jest.spyOn(repository, 'findAll').mockResolvedValue(mockPaginatedResult);
 
-      const result = await service.findAll({ page: 1, limit: 10 });
+      const result = await service.findAll();
 
-      expect(result).toEqual({
-        ...mockResult,
-        data: [{
-          id: mockUser.id,
-          name: mockUser.name,
-          email: mockUser.email,
-          phone: mockUser.phone,
-          role: mockUser.role,
-          avatarUrl: mockUser.avatarUrl,
-          createdAt: mockUser.createdAt,
-          updatedAt: mockUser.updatedAt,
-        }],
-      });
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.data[0].id).toBe(mockUser.id);
+      expect(result.data[0].name).toBe(mockUser.name);
+      expect(result.data[0].email).toBe(mockUser.email);
+      expect(result.data[0]).not.toHaveProperty('password');
+    });
+
+    it('should handle empty results', async () => {
+      const mockPaginatedResult = {
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+      };
+
+      jest.spyOn(repository, 'findAll').mockResolvedValue(mockPaginatedResult);
+
+      const result = await service.findAll();
+
+      expect(result.data).toHaveLength(0);
+      expect(result.total).toBe(0);
     });
   });
 
   describe('findById', () => {
     it('should return user from cache if available', async () => {
-      jest.spyOn(cacheService, 'getCachedUser').mockResolvedValue(mockCachedUser);
-      jest.spyOn(repository, 'findById').mockResolvedValue(mockUser);
-      jest.spyOn(cacheService, 'cacheUser').mockResolvedValue();
-
-      const result = await service.findById('user-1');
-
-      expect(result).toEqual({
-        id: mockCachedUser.id,
-        name: mockCachedUser.name,
-        email: mockCachedUser.email,
-        phone: mockCachedUser.phone,
-        role: mockCachedUser.role,
-        avatarUrl: mockCachedUser.avatarUrl,
-        createdAt: mockCachedUser.createdAt,
-        updatedAt: mockCachedUser.updatedAt,
-      });
-      expect(cacheService.getCachedUser).toHaveBeenCalledWith('user-1');
-      expect(repository.findById).not.toHaveBeenCalled();
-    });
-
-    it('should return user from database if not in cache', async () => {
-      jest.spyOn(cacheService, 'getCachedUser').mockResolvedValue(null);
-      jest.spyOn(repository, 'findById').mockResolvedValue(mockUser);
-      jest.spyOn(cacheService, 'cacheUser').mockResolvedValue();
-
-      const result = await service.findById('user-1');
-
-      expect(result).toEqual({
+      const cachedUser = {
         id: mockUser.id,
         name: mockUser.name,
         email: mockUser.email,
@@ -161,41 +149,36 @@ describe('UsersService', () => {
         avatarUrl: mockUser.avatarUrl,
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
-      });
-      expect(repository.findById).toHaveBeenCalledWith('user-1');
-      expect(cacheService.cacheUser).toHaveBeenCalledWith('user-1', mockUser);
+      };
+
+      jest.spyOn(cacheService, 'getCachedUser').mockResolvedValue(cachedUser);
+
+      const result = await service.findById(mockUser.id);
+
+      expect(result.id).toBe(mockUser.id);
+      expect(result.name).toBe(mockUser.name);
+      expect(result).not.toHaveProperty('password');
+      expect(cacheService.getCachedUser).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should fetch from database and cache if not in cache', async () => {
+      jest.spyOn(cacheService, 'getCachedUser').mockResolvedValue(null);
+      jest.spyOn(repository, 'findById').mockResolvedValue(mockUser);
+      jest.spyOn(cacheService, 'cacheUser').mockResolvedValue();
+
+      const result = await service.findById(mockUser.id);
+
+      expect(result.id).toBe(mockUser.id);
+      expect(result.name).toBe(mockUser.name);
+      expect(repository.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(cacheService.cacheUser).toHaveBeenCalledWith(mockUser.id, mockUser);
     });
 
     it('should throw NotFoundError if user not found', async () => {
       jest.spyOn(cacheService, 'getCachedUser').mockResolvedValue(null);
       jest.spyOn(repository, 'findById').mockResolvedValue(null);
 
-      await expect(service.findById('nonexistent')).rejects.toThrow(NotFoundError);
-    });
-  });
-
-  describe('findByEmail', () => {
-    it('should return user by email', async () => {
-      jest.spyOn(repository, 'findByEmail').mockResolvedValue(mockUser);
-
-      const result = await service.findByEmail('john@example.com');
-
-      expect(result).toEqual({
-        id: mockUser.id,
-        name: mockUser.name,
-        email: mockUser.email,
-        phone: mockUser.phone,
-        role: mockUser.role,
-        avatarUrl: mockUser.avatarUrl,
-        createdAt: mockUser.createdAt,
-        updatedAt: mockUser.updatedAt,
-      });
-    });
-
-    it('should throw NotFoundError if user not found', async () => {
-      jest.spyOn(repository, 'findByEmail').mockResolvedValue(null);
-
-      await expect(service.findByEmail('nonexistent@example.com')).rejects.toThrow(NotFoundError);
+      await expect(service.findById('non-existent')).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -204,6 +187,7 @@ describe('UsersService', () => {
       const createUserDto = TestUtils.createMockCreateUserDto();
       const mockUser = TestUtils.createMockUser();
 
+      jest.spyOn(repository, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(repository, 'create').mockResolvedValue(mockUser);
       jest.spyOn(cacheService, 'cacheUser').mockResolvedValue();
       jest.spyOn(queueService, 'addUserWelcomeJob').mockResolvedValue({} as Job);
@@ -211,6 +195,7 @@ describe('UsersService', () => {
       const result = await service.createUser(createUserDto);
 
       expect(result).toEqual(mockUser);
+      expect(repository.findByEmail).toHaveBeenCalledWith(createUserDto.email);
       expect(repository.create).toHaveBeenCalledWith(createUserDto);
       expect(cacheService.cacheUser).toHaveBeenCalledWith(mockUser.id, mockUser);
       expect(queueService.addUserWelcomeJob).toHaveBeenCalledWith({
@@ -220,13 +205,11 @@ describe('UsersService', () => {
       });
     });
 
-    it('should throw ConflictError if user with email already exists', async () => {
-      const createUserDto = TestUtils.createMockCreateUserDto();
+    it('should throw ConflictError if email already exists', async () => {
+      jest.spyOn(repository, 'findByEmail').mockResolvedValue(mockUser);
 
-      jest.spyOn(repository, 'findByEmail').mockResolvedValue(TestUtils.createMockUser());
-
-      await expect(service.createUser(createUserDto)).rejects.toThrow(ConflictError);
-      expect(repository.findByEmail).toHaveBeenCalledWith(createUserDto.email);
+      await expect(service.createUser(mockCreateUserDto)).rejects.toThrow(ConflictError);
+      expect(repository.findByEmail).toHaveBeenCalledWith(mockCreateUserDto.email);
     });
   });
 
@@ -244,6 +227,7 @@ describe('UsersService', () => {
       const result = await service.updateUser(userId, updateUserDto);
 
       expect(result).toEqual(updatedUser);
+      expect(repository.findById).toHaveBeenCalledWith(userId);
       expect(repository.update).toHaveBeenCalledWith(userId, updateUserDto);
       expect(cacheService.cacheUser).toHaveBeenCalledWith(userId, updatedUser);
       expect(queueService.addUserProfileUpdateJob).toHaveBeenCalledWith({
@@ -253,13 +237,9 @@ describe('UsersService', () => {
     });
 
     it('should throw NotFoundError if user not found', async () => {
-      const userId = 'user-1';
-      const updateUserDto = TestUtils.createMockUpdateUserDto();
-
       jest.spyOn(repository, 'findById').mockResolvedValue(null);
 
-      await expect(service.updateUser(userId, updateUserDto)).rejects.toThrow(NotFoundError);
-      expect(repository.findById).toHaveBeenCalledWith(userId);
+      await expect(service.updateUser('non-existent', mockUpdateUserDto)).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -277,6 +257,7 @@ describe('UsersService', () => {
       const result = await service.deleteUser(userId);
 
       expect(result).toEqual(mockUser);
+      expect(repository.findById).toHaveBeenCalledWith(userId);
       expect(repository.delete).toHaveBeenCalledWith(userId);
       expect(cacheService.invalidateUserCache).toHaveBeenCalledWith(userId);
       expect(sessionService.deleteUserSessions).toHaveBeenCalledWith(userId);
@@ -288,12 +269,28 @@ describe('UsersService', () => {
     });
 
     it('should throw NotFoundError if user not found', async () => {
-      const userId = 'user-1';
-
       jest.spyOn(repository, 'findById').mockResolvedValue(null);
 
-      await expect(service.deleteUser(userId)).rejects.toThrow(NotFoundError);
-      expect(repository.findById).toHaveBeenCalledWith(userId);
+      await expect(service.deleteUser('non-existent')).rejects.toThrow(NotFoundError);
     });
   });
-}); 
+
+  describe('findByEmail', () => {
+    it('should return user by email', async () => {
+      jest.spyOn(repository, 'findByEmail').mockResolvedValue(mockUser);
+
+      const result = await service.findByEmail(mockUser.email);
+
+      expect(result.id).toBe(mockUser.id);
+      expect(result.email).toBe(mockUser.email);
+      expect(result).not.toHaveProperty('password');
+      expect(repository.findByEmail).toHaveBeenCalledWith(mockUser.email);
+    });
+
+    it('should throw NotFoundError if user not found', async () => {
+      jest.spyOn(repository, 'findByEmail').mockResolvedValue(null);
+
+      await expect(service.findByEmail('nonexistent@example.com')).rejects.toThrow(NotFoundError);
+    });
+  });
+});

@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisModule } from '../redis/redis.module';
+import { JwtStrategy } from 'common/strategies/jwt.strategies';
 
 @Module({
   imports: [
@@ -23,8 +24,10 @@ import { RedisModule } from '../redis/redis.module';
   ],
   controllers: [AuthController],
   providers: [
-    AuthService, 
+    AuthService,
     AuthRepository,
+    { provide: 'IAuthRepository', useClass: AuthRepository },
+    JwtStrategy,
   ],
   exports: [AuthService],
 })

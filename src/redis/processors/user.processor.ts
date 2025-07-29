@@ -2,8 +2,9 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { CacheService } from '../cache.service';
-import { CachedUser } from 'common/interfaces/cache.interface';
+import { CachedUser } from '../../../common/interfaces/redis.interface';
 import { PubSubService } from '../pubsub.service';
+import { isCachedUser } from '../../../common/utils/type-guards';
 
 export interface UserJobData {
   userId: string;
@@ -34,30 +35,23 @@ export class UserProcessor extends WorkerHost {
   }
 
   async process(job: Job<UserJobData | WelcomeUserData | ProfileUpdateData>): Promise<void> {
-    this.logger.log(`Processing user job: ${job.id}`);
-    
-    try {
-      const jobName = job.name;
-      
-      switch (jobName) {
-        case 'welcome-user':
-          await this.processWelcomeUser(job as Job<WelcomeUserData>);
-          break;
-        case 'update-profile':
-          await this.processProfileUpdate(job as Job<ProfileUpdateData>);
-          break;
-        case 'account-deletion':
-          await this.processAccountDeletion(job as Job<UserJobData>);
-          break;
-        case 'data-export':
-          await this.processDataExport(job as Job<UserJobData>);
-          break;
-        default:
-          this.logger.warn(`Unknown job name: ${jobName}`);
-      }
-    } catch (error) {
-      this.logger.error(`Error processing user job: ${error}`);
-      throw error;
+    const { action } = job.data as UserJobData;
+
+    switch (action) {
+      case 'welcome':
+        await this.processWelcomeUser(job as Job<WelcomeUserData>);
+        break;
+      case 'profile-update':
+        await this.processProfileUpdate(job as Job<ProfileUpdateData>);
+        break;
+      case 'account-deletion':
+        await this.processAccountDeletion(job as Job<UserJobData>);
+        break;
+      case 'data-export':
+        await this.processDataExport(job as Job<UserJobData>);
+        break;
+      default:
+        this.logger.warn(`Unknown user action: ${action}`);
     }
   }
 
@@ -69,23 +63,19 @@ export class UserProcessor extends WorkerHost {
     // Send welcome email
     await this.sendWelcomeEmail(email);
     
-    // Send welcome notification
-    await this.pubSubService.publishUserNotification(userId, {
-      type: 'welcome',
-      title: 'Welcome to Nest Villa!',
-      message: 'Thank you for joining our platform. We\'re excited to have you here!',
-      data: {
-        userId,
-        email,
-        timestamp: Date.now(),
-      },
-    });
-    
     // Update user cache
     await this.updateUserCache(userId);
     
     // Track user activity
-    await this.trackUserActivity(userId, 'welcome');
+    await this.trackUserActivity(userId, 'welcome_email_sent');
+    
+    // Publish welcome event
+    await this.pubSubService.publishUserNotification(userId, {
+      type: 'welcome',
+      title: 'Welcome!',
+      message: 'Welcome to our platform!',
+      data: { userId, email },
+    });
     
     this.logger.log(`Welcome processed successfully for user: ${userId}`);
   }
@@ -101,20 +91,16 @@ export class UserProcessor extends WorkerHost {
     // Update user cache
     await this.updateUserCache(userId);
     
-    // Send profile update notification
+    // Track user activity
+    await this.trackUserActivity(userId, 'profile_updated');
+    
+    // Publish profile update event
     await this.pubSubService.publishUserNotification(userId, {
       type: 'profile-updated',
       title: 'Profile Updated',
       message: 'Your profile has been updated successfully.',
-      data: {
-        userId,
-        updatedFields: Object.keys(profileData),
-        timestamp: Date.now(),
-      },
+      data: { userId, profileData },
     });
-    
-    // Track user activity
-    await this.trackUserActivity(userId, 'profile-update');
     
     this.logger.log(`Profile update processed successfully for user: ${userId}`);
   }
@@ -124,24 +110,21 @@ export class UserProcessor extends WorkerHost {
     
     this.logger.log(`Processing account deletion for user: ${userId}`);
     
-    // Remove user data from cache
-    await this.cacheService.invalidateUserCache(userId);
-    
     // Remove user sessions
     await this.removeUserSessions(userId);
     
-    // Remove user data from search index
+    // Remove from search index
     await this.removeUserFromSearchIndex(userId);
     
-    // Send deletion notification
+    // Invalidate user cache
+    await this.cacheService.invalidateUserCache(userId);
+    
+    // Publish account deletion event
     await this.pubSubService.publishUserNotification(userId, {
       type: 'account-deleted',
       title: 'Account Deleted',
       message: 'Your account has been deleted successfully.',
-      data: {
-        userId,
-        timestamp: Date.now(),
-      },
+      data: { userId },
     });
     
     this.logger.log(`Account deletion processed successfully for user: ${userId}`);
@@ -182,9 +165,8 @@ export class UserProcessor extends WorkerHost {
   private async updateUserCache(userId: string): Promise<void> {
     // Simulate updating user cache
     const userData = await this.getUserData(userId);
-    if (userData) {
-      // Type assertion since we know the structure matches CachedUser
-      await this.cacheService.cacheUser(userId, userData as CachedUser);
+    if (userData && isCachedUser(userData)) {
+      await this.cacheService.cacheUser(userId, userData);
     }
   }
 
@@ -237,13 +219,15 @@ export class UserProcessor extends WorkerHost {
     return `exports/user-${userData.userId}-${Date.now()}.json`;
   }
 
-  private async getUserData(userId: string): Promise<Record<string, unknown>> {
-    // Simulate getting user data
+  private async getUserData(userId: string): Promise<CachedUser | null> {
+    // Simulate getting user data with proper structure
     return {
       id: userId,
       name: 'John Doe',
       email: 'john@example.com',
-      role: 'user',
+      phone: '+6281234567890',
+      role: 'CUSTOMER',
+      avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

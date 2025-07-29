@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { TokenData, TokenType } from '../../common/interfaces/token-data.interface';
+import { TokenData, TokenType } from '../../common/interfaces/redis.interface';
 
 @Injectable()
 export class TokenService {
@@ -26,8 +26,8 @@ export class TokenService {
     metadata?: Record<string, unknown>,
   ): Promise<string> {
     const token = this.generateToken();
-    const tokenKey = `${this.TOKEN_PREFIX}${token}`;
-    const userTokensKey = `${this.USER_TOKENS_PREFIX}${userId}`;
+    const tokenKey = RedisService.getTokenKey(token);
+    const userTokensKey = RedisService.getUserTokensKey(userId);
 
     const tokenData: TokenData = {
       userId,
@@ -52,7 +52,7 @@ export class TokenService {
 
   // Validate and get token data
   async validateToken(token: string): Promise<TokenData | null> {
-    const tokenKey = `${this.TOKEN_PREFIX}${token}`;
+    const tokenKey = RedisService.getTokenKey(token);
     const tokenData = await this.redisService.hget(tokenKey, 'data');
 
     if (!tokenData) {
@@ -77,12 +77,12 @@ export class TokenService {
 
   // Delete a token
   async deleteToken(token: string): Promise<void> {
-    const tokenKey = `${this.TOKEN_PREFIX}${token}`;
+    const tokenKey = RedisService.getTokenKey(token);
     const tokenData = await this.validateToken(token);
 
     if (tokenData) {
       await this.redisService.del(tokenKey);
-      const userTokensKey = `${this.USER_TOKENS_PREFIX}${tokenData.userId}`;
+      const userTokensKey = RedisService.getUserTokensKey(tokenData.userId);
       await this.redisService.srem(userTokensKey, token);
       this.logger.log(`Deleted token: ${token}`);
     }
@@ -90,7 +90,7 @@ export class TokenService {
 
   // Delete all tokens for a user
   async deleteUserTokens(userId: string, type?: TokenType): Promise<void> {
-    const userTokensKey = `${this.USER_TOKENS_PREFIX}${userId}`;
+    const userTokensKey = RedisService.getUserTokensKey(userId);
     const tokens = await this.redisService.smembers(userTokensKey);
 
     if (tokens.length > 0) {
@@ -99,20 +99,20 @@ export class TokenService {
       for (const token of tokens) {
         const tokenData = await this.validateToken(token);
         if (tokenData && (!type || tokenData.type === type)) {
-          const tokenKey = `${this.TOKEN_PREFIX}${token}`;
+          const tokenKey = RedisService.getTokenKey(token);
           pipeline.del(tokenKey);
           pipeline.srem(userTokensKey, token);
         }
       }
       
       await pipeline.exec();
-      this.logger.log(`Deleted tokens for user: ${userId}`);
+      this.logger.log(`Deleted tokens for user: ${userId}${type ? ` of type ${type}` : ''}`);
     }
   }
 
   // Get all tokens for a user
   async getUserTokens(userId: string, type?: TokenType): Promise<TokenData[]> {
-    const userTokensKey = `${this.USER_TOKENS_PREFIX}${userId}`;
+    const userTokensKey = RedisService.getUserTokensKey(userId);
     const tokens = await this.redisService.smembers(userTokensKey);
     const tokenData: TokenData[] = [];
 
@@ -198,7 +198,7 @@ export class TokenService {
 
   // Extend token TTL
   async extendToken(token: string, additionalTtl: number): Promise<void> {
-    const tokenKey = `${this.TOKEN_PREFIX}${token}`;
+    const tokenKey = RedisService.getTokenKey(token);
     const tokenData = await this.validateToken(token);
 
     if (tokenData) {

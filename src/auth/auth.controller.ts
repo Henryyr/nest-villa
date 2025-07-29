@@ -7,7 +7,7 @@ import { AuthResponseDto, RegisterResponseDto, UserProfileDto } from './dto/auth
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'common/guards/jwt-auth.guard';
 import { Request } from 'express';
-import { JwtPayload } from 'common/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../common/interfaces/job-data.interface';
 
 @ApiTags('auth')
 @Controller('auth')

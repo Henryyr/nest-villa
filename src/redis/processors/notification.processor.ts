@@ -13,6 +13,16 @@ export interface NotificationJobData {
   channels?: string[];
 }
 
+export interface StoredNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+  timestamp: number;
+  read: boolean;
+}
+
 @Processor('notification')
 @Injectable()
 export class NotificationProcessor extends WorkerHost {
@@ -42,7 +52,7 @@ export class NotificationProcessor extends WorkerHost {
 
       // Store notification in cache for offline users
       await this.storeNotification(userId, {
-        id: job.id,
+        id: job.id || `notification-${Date.now()}`,
         type,
         title,
         message,
@@ -70,11 +80,11 @@ export class NotificationProcessor extends WorkerHost {
     }
   }
 
-  private async storeNotification(userId: string, notification: unknown): Promise<void> {
+  private async storeNotification(userId: string, notification: StoredNotification): Promise<void> {
     const key = `notifications:${userId}`;
     const cached = await this.cacheService.get(key);
     const notifications = Array.isArray(cached) ? cached : [];
-    notifications.unshift(notification as Record<string, unknown>);
+    notifications.unshift(notification);
     
     // Keep only last 100 notifications
     if (notifications.length > 100) {

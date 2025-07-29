@@ -3,7 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-import { CachedProperty, CachedUser, CachedLocation } from 'common/interfaces/cache.interface';
+import { CachedProperty, CachedUser, CachedLocation } from '../../common/interfaces/redis.interface';
 
 @Injectable()
 export class CacheService {
@@ -56,13 +56,13 @@ export class CacheService {
 
   // User cache methods
   async cacheUser(userId: string, userData: CachedUser, ttl: number = 7200): Promise<void> {
-    const key = `user:${userId}`;
+    const key = RedisService.getUserCacheKey(userId);
     await this.cacheManager.set(key, userData, ttl);
     this.logger.log(`Cached user: ${userId}`);
   }
 
   async getCachedUser(userId: string): Promise<CachedUser | null> {
-    const key = `user:${userId}`;
+    const key = RedisService.getUserCacheKey(userId);
     const cached = await this.cacheManager.get(key);
     if (cached && typeof cached === 'object' && cached !== null && 'id' in cached) {
       this.logger.log(`Cache hit for user: ${userId}`);
@@ -72,7 +72,7 @@ export class CacheService {
   }
 
   async invalidateUserCache(userId: string): Promise<void> {
-    const key = `user:${userId}`;
+    const key = RedisService.getUserCacheKey(userId);
     await this.cacheManager.del(key);
     
     // Also invalidate user-specific caches
@@ -91,26 +91,23 @@ export class CacheService {
     ];
     
     for (const pattern of patterns) {
-      const keys = await this.redisService.getClient().keys(pattern);
-      if (keys.length > 0) {
-        const pipeline = this.redisService.getClient().pipeline();
-        keys.forEach(key => pipeline.del(key));
-        await pipeline.exec();
-        this.logger.log(`Invalidated ${keys.length} favorites cache keys for user: ${userId} with pattern: ${pattern}`);
-      }
+      const deleted = await this.redisService.bulkDeleteByPattern(pattern);
+      this.logger.log(`Invalidated ${deleted} favorites cache keys for user: ${userId} with pattern: ${pattern}`);
     }
   }
 
   // Invalidate user wishlist cache
   async invalidateUserWishlistCache(userId: string): Promise<void> {
-    const pattern = `wishlist:${userId}:*`;
-    const keys = await this.redisService.getClient().keys(pattern);
-    if (keys.length > 0) {
-      const pipeline = this.redisService.getClient().pipeline();
-      keys.forEach(key => pipeline.del(key));
-      await pipeline.exec();
+    // Clear all wishlist cache keys for this user
+    const patterns = [
+      `wishlist:${userId}:*`,
+      `wishlist:${userId}`,
+    ];
+    
+    for (const pattern of patterns) {
+      const deleted = await this.redisService.bulkDeleteByPattern(pattern);
+      this.logger.log(`Invalidated ${deleted} wishlist cache keys for user: ${userId} with pattern: ${pattern}`);
     }
-    this.logger.log(`Invalidated wishlist cache for user: ${userId}`);
   }
 
   // Popular properties cache (frequently viewed)

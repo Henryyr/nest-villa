@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { Prisma } from '@prisma/client';
+import { IPropertyRepository } from '../../common/interfaces/property-repository.interface';
 
 @Injectable()
-export class PropertyRepository {
+export class PropertyRepository implements IPropertyRepository {
   constructor(private prisma: PrismaService) {}
 
   async findAll(options: FindAllOptions = {}) {
@@ -24,6 +25,14 @@ export class PropertyRepository {
         include: {
           images: true,
           villa: true,
+          facilities: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -50,15 +59,15 @@ export class PropertyRepository {
     });
   }
 
-  async createProperty(data: Prisma.PropertyCreateInput) {
+  async create(data: Prisma.PropertyCreateInput) {
     return this.prisma.property.create({ data });
   }
 
-  async updateProperty(id: string, data: Prisma.PropertyUpdateInput) {
+  async update(id: string, data: Prisma.PropertyUpdateInput) {
     return this.prisma.property.update({ where: { id }, data });
   }
 
-  async deleteProperty(id: string) {
+  async delete(id: string) {
     return this.prisma.property.delete({ where: { id } });
   }
 } 

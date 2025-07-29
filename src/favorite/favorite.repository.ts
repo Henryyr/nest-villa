@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { Prisma } from '@prisma/client';
+import { IFavoriteRepository } from '../../common/interfaces/favorite-repository.interface';
+import { Property } from '@prisma/client';
 
 @Injectable()
-export class FavoriteRepository {
+export class FavoriteRepository implements IFavoriteRepository {
   constructor(private prisma: PrismaService) {}
 
   async addToFavorite(userId: string, propertyId: string) {
@@ -21,10 +23,64 @@ export class FavoriteRepository {
     return result;
   }
 
-  async getFavorite(userId: string, options: FindAllOptions = {}) {
-    console.log(`Getting favorites for userId=${userId}, options=${JSON.stringify(options)}`);
+  async findAll(options: FindAllOptions = {}) {
     const { search, page = 1, limit = 10 } = options;
+    const where: Prisma.FavoriteWhereInput = {};
+    if (search) {
+      where.property = {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { location: { contains: search, mode: 'insensitive' } },
+        ],
+      };
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.favorite.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          property: {
+            include: {
+              images: true,
+              villa: true,
+            },
+          },
+        },
+      }),
+      this.prisma.favorite.count({ where }),
+    ]);
+    return { data, total, page, limit };
+  }
 
+  async findById(id: string) {
+    return this.prisma.favorite.findUnique({
+      where: { id },
+      include: {
+        property: {
+          include: {
+            images: true,
+            villa: true,
+          },
+        },
+      },
+    });
+  }
+
+  async create(data: Prisma.FavoriteCreateInput) {
+    return this.prisma.favorite.create({ data });
+  }
+
+  async update(id: string, data: Prisma.FavoriteUpdateInput) {
+    return this.prisma.favorite.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return this.prisma.favorite.delete({ where: { id } });
+  }
+
+  async getFavorites(userId: string, options: FindAllOptions = {}) {
+    const { search, page = 1, limit = 10 } = options;
     const where: Prisma.FavoriteWhereInput = {
       userId,
       ...(search && {
@@ -36,8 +92,7 @@ export class FavoriteRepository {
         },
       }),
     };
-
-    const result = await this.prisma.favorite.findMany({
+    return this.prisma.favorite.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
@@ -50,9 +105,6 @@ export class FavoriteRepository {
         },
       },
     });
-    
-    console.log(`Found ${result.length} favorites for userId=${userId}`);
-    return result;
   }
 
   async findByUserAndProperty(userId: string, propertyId: string) {
@@ -62,10 +114,14 @@ export class FavoriteRepository {
     return result;
   }
 
-  async propertyExists(propertyId: string) {
+  async propertyExists(propertyId: string): Promise<boolean> {
     console.log(`Checking if property exists: propertyId=${propertyId}`);
     const result = await this.prisma.property.findUnique({ where: { id: propertyId } });
     console.log(`Property exists: ${!!result}`);
-    return result;
+    return !!result;
+  }
+
+  async findPropertyById(propertyId: string): Promise<Property | null> {
+    return this.prisma.property.findUnique({ where: { id: propertyId } });
   }
 }

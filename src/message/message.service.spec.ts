@@ -5,7 +5,7 @@ import { PubSubService } from '../redis/pubsub.service';
 import { QueueService } from '../redis/queue.service';
 import { CacheService } from '../redis/cache.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User, Message } from '@prisma/client';
 import { Job } from 'bullmq';
 
 describe('MessageService', () => {
@@ -288,17 +288,10 @@ describe('MessageService', () => {
   });
 
   describe('getUserConversations', () => {
-    const mockConversations = [
-      {
-        id: 'conv-1',
-        otherUserId: 'user-2',
-        lastMessage: mockMessage,
-        unreadCount: 2,
-      },
-    ];
+    const mockConversations = mockConversation;
 
     it('should return user conversations', async () => {
-      jest.spyOn(repository, 'getUserConversations').mockResolvedValue(mockConversations as any);
+      jest.spyOn(repository, 'getUserConversations').mockResolvedValue(mockConversations as Message[]);
 
       const result = await service.getUserConversations(mockUser);
 

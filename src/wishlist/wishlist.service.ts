@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { WishlistRepository } from './wishlist.repository';
+import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
+import { IWishlistRepository } from '../../common/interfaces/wishlist-repository.interface';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { WishlistWithProperty } from '../../common/types/wishlist-with-property.type';
 import { WishlistResponseDto } from './dto/wishlist-response.dto';
@@ -10,14 +10,18 @@ import { PubSubService } from '../redis/pubsub.service';
 @Injectable()
 export class WishlistService {
   constructor(
-    private wishlistRepository: WishlistRepository,
+    @Inject('IWishlistRepository') private wishlistRepository: IWishlistRepository,
     private cacheService: CacheService,
     private pubSubService: PubSubService,
   ) {}
 
   async addToWishlist(userId: string, propertyId: string): Promise<WishlistResponseDto> {
     // Check if property exists
-    const property = await this.wishlistRepository.propertyExists(propertyId);
+    const propertyExists = await this.wishlistRepository.propertyExists(propertyId);
+    if (!propertyExists) throw new NotFoundException('Property not found');
+
+    // Get property data for notification
+    const property = await this.wishlistRepository.findPropertyById(propertyId);
     if (!property) throw new NotFoundException('Property not found');
 
     // Check for duplicate
@@ -42,7 +46,11 @@ export class WishlistService {
 
   async removeFromWishlist(userId: string, propertyId: string): Promise<{ deleted: boolean }> {
     // Check if property exists
-    const property = await this.wishlistRepository.propertyExists(propertyId);
+    const propertyExists = await this.wishlistRepository.propertyExists(propertyId);
+    if (!propertyExists) throw new NotFoundException('Property not found');
+
+    // Get property data for notification
+    const property = await this.wishlistRepository.findPropertyById(propertyId);
     if (!property) throw new NotFoundException('Property not found');
 
     const result = await this.wishlistRepository.removeFromWishlist(userId, propertyId);

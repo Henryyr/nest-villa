@@ -15,6 +15,7 @@ import { RedisModule } from '../redis/redis.module';
   providers: [
     PropertyService, 
     PropertyRepository,
+    { provide: 'IPropertyRepository', useClass: PropertyRepository },
   ],
   controllers: [PropertyController],
 })

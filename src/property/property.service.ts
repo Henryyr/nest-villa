@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PropertyRepository } from './property.repository';
+import { IPropertyRepository } from '../../common/interfaces/property-repository.interface';
+import { Inject } from '@nestjs/common';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
@@ -24,13 +25,32 @@ interface PropertyWithDetails extends PropertyWithImages {
   owner: { id: string; name: string; avatarUrl: string | null };
 }
 
+function withPropertyDefaults<T extends Partial<PropertyWithDetails>>(property: T): PropertyWithDetails {
+  return {
+    ...property,
+    images: Array.isArray(property.images) ? property.images : [],
+    facilities: Array.isArray(property.facilities) ? property.facilities : [],
+    owner: property.owner ?? { id: '', name: '', avatarUrl: null },
+    title: property.title ?? '',
+    description: property.description ?? '',
+    location: property.location ?? '',
+    price: property.price ?? 0,
+    type: property.type ?? PropertyType.HOUSE,
+    id: property.id ?? '',
+    createdAt: property.createdAt ?? new Date(),
+    updatedAt: property.updatedAt ?? new Date(),
+  } as PropertyWithDetails;
+}
+
 @Injectable()
 export class PropertyService {
-  constructor(private propertyRepository: PropertyRepository) {}
+  constructor(
+    @Inject('IPropertyRepository') private propertyRepository: IPropertyRepository,
+  ) {}
 
   async findAll(): Promise<PropertyResponseDto[]> {
     const result = await this.propertyRepository.findAll();
-    return result.data.map(property => this.toPropertyResponseDto(property));
+    return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
   }
 
   async findById(id: string): Promise<PropertyDetailDto> {
@@ -38,7 +58,7 @@ export class PropertyService {
     if (!property) {
       throw new NotFoundException('Property not found');
     }
-    return this.toPropertyDetailDto(property);
+    return this.toPropertyDetailDto(withPropertyDefaults(property));
   }
 
   async createProperty(data: CreatePropertyDto): Promise<PropertyDetailDto> {
@@ -51,9 +71,9 @@ export class PropertyService {
       owner: { connect: { id: data.ownerId } },
     };
 
-    const property = await this.propertyRepository.createProperty(propertyData);
+    const property = await this.propertyRepository.create(propertyData);
     const createdProperty = await this.propertyRepository.findById(property.id);
-    return this.toPropertyDetailDto(createdProperty!);
+    return this.toPropertyDetailDto(withPropertyDefaults(createdProperty!));
   }
 
   async updateProperty(id: string, data: UpdatePropertyDto): Promise<PropertyDetailDto> {
@@ -70,9 +90,9 @@ export class PropertyService {
       ...(data.type && { type: data.type as PropertyType }),
     };
 
-    await this.propertyRepository.updateProperty(id, propertyData);
+    await this.propertyRepository.update(id, propertyData);
     const updatedProperty = await this.propertyRepository.findById(id);
-    return this.toPropertyDetailDto(updatedProperty!);
+    return this.toPropertyDetailDto(withPropertyDefaults(updatedProperty!));
   }
 
   async deleteProperty(id: string): Promise<void> {
@@ -80,7 +100,7 @@ export class PropertyService {
     if (!existingProperty) {
       throw new NotFoundException('Property not found');
     }
-    await this.propertyRepository.deleteProperty(id);
+    await this.propertyRepository.delete(id);
   }
 
   private toPropertyResponseDto(property: PropertyWithImages): PropertyResponseDto {
@@ -91,16 +111,17 @@ export class PropertyService {
       location: property.location,
       price: property.price,
       type: property.type,
-      images: property.images?.map(img => ({
-        id: img.id,
-        url: img.url,
-      })) || [],
-      villa: property.villa ? {
-        id: property.villa.id,
-        bedrooms: property.villa.bedrooms,
-        bathrooms: property.villa.bathrooms,
-        hasSwimmingPool: property.villa.hasSwimmingPool,
-      } : undefined,
+      images: Array.isArray(property.images)
+        ? property.images.map(img => ({ id: img.id, url: img.url }))
+        : [],
+      villa: property.villa
+        ? {
+            id: property.villa.id,
+            bedrooms: property.villa.bedrooms,
+            bathrooms: property.villa.bathrooms,
+            hasSwimmingPool: property.villa.hasSwimmingPool,
+          }
+        : undefined,
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
     };
@@ -116,19 +137,27 @@ export class PropertyService {
       type: property.type,
       latitude: 0, // Default value since it's not in the schema
       longitude: 0, // Default value since it's not in the schema
-      images: property.images?.map(img => img.url) || [],
-      villa: property.villa ? {
-        id: property.villa.id,
-        bedrooms: property.villa.bedrooms,
-        bathrooms: property.villa.bathrooms,
-        hasSwimmingPool: property.villa.hasSwimmingPool,
-      } : null,
-      facilities: property.facilities?.map(facility => facility.name) || [],
-      owner: {
-        id: property.owner.id,
-        name: property.owner.name,
-        avatarUrl: property.owner.avatarUrl,
-      },
+      images: Array.isArray(property.images)
+        ? property.images.map(img => img.url)
+        : [],
+      villa: property.villa
+        ? {
+            id: property.villa.id,
+            bedrooms: property.villa.bedrooms,
+            bathrooms: property.villa.bathrooms,
+            hasSwimmingPool: property.villa.hasSwimmingPool,
+          }
+        : null,
+      facilities: Array.isArray(property.facilities)
+        ? property.facilities.map(facility => facility.name)
+        : [],
+      owner: property.owner
+        ? {
+            id: property.owner.id,
+            name: property.owner.name,
+            avatarUrl: property.owner.avatarUrl,
+          }
+        : { id: '', name: '', avatarUrl: null },
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
     };

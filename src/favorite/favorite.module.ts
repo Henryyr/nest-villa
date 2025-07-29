@@ -15,6 +15,7 @@ import { RedisModule } from '../redis/redis.module';
   providers: [
     FavoriteService, 
     FavoriteRepository,
+    { provide: 'IFavoriteRepository', useClass: FavoriteRepository },
   ],
   controllers: [FavoriteController],
 })

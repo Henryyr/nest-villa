@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-import { RateLimitConfig, RateLimitResult } from 'common/interfaces/rate-limit.interface';
+import { RateLimitConfig, RateLimitResult } from '../../common/interfaces/redis.interface';
 
 @Injectable()
 export class RateLimitService {

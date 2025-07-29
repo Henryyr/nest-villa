@@ -9,6 +9,20 @@ import {
 import { Request, Response } from 'express';
 import { AppError, ValidationError, NotFoundError, ConflictError, AuthenticationError, AuthorizationError } from '../types/error.types';
 
+interface HttpExceptionResponse {
+  message?: string | string[];
+  error?: string;
+  details?: Record<string, unknown>;
+}
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -16,7 +30,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<AuthenticatedRequest>();
 
     let status: HttpStatus;
     let message: string;
@@ -42,11 +56,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
         code = 'HTTP_EXCEPTION';
-      } else if (typeof exceptionResponse === 'object') {
-        const responseObj = exceptionResponse as Record<string, unknown>;
-        message = responseObj.message as string || exception.message;
-        code = responseObj.error as string || 'HTTP_EXCEPTION';
-        details = responseObj.details as Record<string, unknown>;
+      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const responseObj = exceptionResponse as HttpExceptionResponse;
+        message = Array.isArray(responseObj.message) 
+          ? responseObj.message[0] 
+          : (responseObj.message as string) || exception.message;
+        code = responseObj.error || 'HTTP_EXCEPTION';
+        details = responseObj.details;
       } else {
         message = exception.message;
         code = 'HTTP_EXCEPTION';
@@ -95,7 +111,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code,
         userAgent: request.get('User-Agent'),
         ip: request.ip,
-        userId: (request as any).user?.id,
+        userId: request.user?.id,
         details,
       }
     );

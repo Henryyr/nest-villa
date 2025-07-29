@@ -1,20 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundError, ConflictError } from '../../common/types/error.types';
-import { UsersRepository } from './users.repository';
+import { IUsersRepository } from '../../common/interfaces/users-repository.interface';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto, UserListResponseDto } from './dto/user-response.dto';
 import { CacheService } from '../redis/cache.service';
-import { CachedUser } from 'common/interfaces/cache.interface';
+import { CachedUser } from '../../common/interfaces/redis.interface';
 import { SessionService } from '../redis/session.service';
 import { QueueService } from '../redis/queue.service';
+import { Inject } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private usersRepository: UsersRepository,
+    @Inject('IUsersRepository') private usersRepository: IUsersRepository,
     private cacheService: CacheService,
     private sessionService: SessionService,
     private queueService: QueueService,
@@ -63,7 +65,7 @@ export class UsersService {
     const existing = await this.usersRepository.findByEmail(data.email);
     if (existing) throw new ConflictError('Email already in use');
     
-    const user = await this.usersRepository.createUser(data);
+    const user = await this.usersRepository.create(data);
     
     // Cache user data
     await this.cacheService.cacheUser(user.id, user as CachedUser);
@@ -79,7 +81,7 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundError('User');
     
-    const updated = await this.usersRepository.updateUser(id, data as Record<string, unknown>);
+    const updated = await this.usersRepository.update(id, data as Prisma.UserUpdateInput);
     
     // Invalidate cache
     await this.cacheService.invalidateUserCache(id);
@@ -88,7 +90,7 @@ export class UsersService {
     await this.cacheService.cacheUser(id, updated as CachedUser);
     
     // Add profile update job to queue
-    await this.queueService.addUserProfileUpdateJob(id, data as Record<string, unknown>);
+    await this.queueService.addUserProfileUpdateJob(id, data as Prisma.UserUpdateInput);
     
     return this.toUserResponseDto(updated);
   }
@@ -98,7 +100,7 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundError('User');
     
-    const deleted = await this.usersRepository.deleteUser(id);
+    const deleted = await this.usersRepository.delete(id);
     
     // Remove from cache
     await this.cacheService.invalidateUserCache(id);

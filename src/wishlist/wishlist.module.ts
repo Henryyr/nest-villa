@@ -15,6 +15,7 @@ import { RedisModule } from '../redis/redis.module';
   providers: [
     WishlistService, 
     WishlistRepository,
+    { provide: 'IWishlistRepository', useClass: WishlistRepository },
   ],
   controllers: [WishlistController],
 })

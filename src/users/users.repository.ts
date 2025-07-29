@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { User, Prisma } from '@prisma/client';
+import { IUsersRepository } from '../../common/interfaces/users-repository.interface';
 
 @Injectable()
-export class UsersRepository {
+export class UsersRepository implements IUsersRepository {
   constructor(private prisma: PrismaService) {}
 
   async findAll(options: FindAllOptions = {}): Promise<{
@@ -48,15 +49,15 @@ export class UsersRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {
+  async create(data: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({ data });
   }
 
-  async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
     return this.prisma.user.update({ where: { id }, data });
   }
 
-  async deleteUser(id: string): Promise<User> {
+  async delete(id: string): Promise<User> {
     return this.prisma.user.delete({ where: { id } });
   }
 } 

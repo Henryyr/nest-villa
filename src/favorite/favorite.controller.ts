@@ -5,7 +5,7 @@ import { JwtAuthGuard } from 'common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FavoriteResponseDto } from './dto/favorite-response.dto';
 import { Request } from 'express';
-import { JwtPayload } from 'common/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../common/interfaces/job-data.interface';
 
 @ApiTags('favorite')
 @UseGuards(JwtAuthGuard)

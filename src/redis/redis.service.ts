@@ -168,6 +168,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return await this.redisClient.incrby(key, increment);
   }
 
+  /**
+   * Bulk delete keys by pattern using pipeline
+   */
+  async bulkDeleteByPattern(pattern: string): Promise<number> {
+    const keys = await this.redisClient.keys(pattern);
+    if (keys.length === 0) return 0;
+    const pipeline = this.redisClient.pipeline();
+    keys.forEach((key) => pipeline.del(key));
+    await pipeline.exec();
+    return keys.length;
+  }
+
   // Get Redis clients for advanced operations
   getClient(): Redis {
     return this.redisClient;
@@ -179,5 +191,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   getPublisher(): Redis {
     return this.redisPublisher;
+  }
+
+  // --- Key Pattern Utilities ---
+  static getUserCacheKey(userId: string): string {
+    return `user:${userId}`;
+  }
+  static getSessionKey(sessionId: string): string {
+    return `session:${sessionId}`;
+  }
+  static getUserSessionsKey(userId: string): string {
+    return `user_sessions:${userId}`;
+  }
+  static getTokenKey(token: string): string {
+    return `token:${token}`;
+  }
+  static getUserTokensKey(userId: string): string {
+    return `user_tokens:${userId}`;
   }
 } 

@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { EphemeralMessageJob } from 'common/interfaces/ephemeral-message-job.interface';
+import { EphemeralMessageJob } from '../../common/interfaces/job-data.interface';
 
 @Processor('ephemeral-messages')
 @Injectable()

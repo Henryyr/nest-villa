@@ -1,54 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { RegisterAuthDto } from './dto/register-auth.dto';
-import { UserProfileDto } from './dto/auth-response.dto';
+import { IAuthRepository } from '../../common/interfaces/auth-repository.interface';
+import { Prisma, User } from '@prisma/client';
 
 @Injectable()
-export class AuthRepository {
+export class AuthRepository implements IAuthRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
     });
   }
 
-  async findById(id: string): Promise<UserProfileDto | null> {
-    const user = await this.prisma.user.findUnique({
+  async findById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
       where: { id },
     });
-    
-    if (!user) return null;
-    
-    const { password, ...rest } = user;
-    if (typeof password !== 'string') {
-      throw new Error('Password is missing or invalid');
-    }
-    return rest;
   }
 
-  async createUser(data: RegisterAuthDto & { password: string }): Promise<UserProfileDto> {
-    const user = await this.prisma.user.create({
-      data,
-    });
-    
-    const { password: _, ...userWithoutPassword } = user;
-    if (typeof _ !== 'string') {
-      throw new Error('Password is missing or invalid');
-    }
-    return userWithoutPassword;
+  async createUser(data: Prisma.UserCreateInput): Promise<User> {
+    return this.prisma.user.create({ data });
   }
 
-  async updateUser(id: string, data: { password?: string }): Promise<UserProfileDto> {
-    const user = await this.prisma.user.update({
-      where: { id },
-      data,
-    });
-    
-    const { password: _, ...userWithoutPassword } = user;
-    if (typeof _ !== 'string') {
-      throw new Error('Password is missing or invalid');
-    }
-    return userWithoutPassword;
+  async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data });
   }
 }

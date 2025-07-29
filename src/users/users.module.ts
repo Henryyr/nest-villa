@@ -17,6 +17,7 @@ import { RedisModule } from '../redis/redis.module';
   providers: [
     UsersService, 
     UsersRepository, 
+    { provide: 'IUsersRepository', useClass: UsersRepository },
     JwtStrategy,
   ],
   exports: [UsersService, UsersRepository],

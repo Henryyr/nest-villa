@@ -1,22 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Message } from '@prisma/client';
+import { Message, Prisma } from '@prisma/client';
 
 @Injectable()
 export class MessageRepository {
   constructor(private prisma: PrismaService) {}
 
   async createMessage(senderId: string, receiverId: string, content: string, propertyId?: string): Promise<Message> {
-    const data = {
-      senderId,
-      receiverId,
+    const data: Prisma.MessageCreateInput = {
+      sender: { connect: { id: senderId } },
+      receiver: { connect: { id: receiverId } },
       content,
-      ...(propertyId && { propertyId }),
+      ...(propertyId && { property: { connect: { id: propertyId } } }),
     };
 
-    // Prisma types are strict about optional fields, but our schema allows propertyId to be optional
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return this.prisma.message.create({ data: data as any });
+    return this.prisma.message.create({ data });
   }
 
   async getMessagesBetweenUsers(userId1: string, userId2: string, propertyId?: string): Promise<Message[]> {

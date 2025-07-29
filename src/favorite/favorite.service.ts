@@ -1,23 +1,28 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { FavoriteRepository } from './favorite.repository';
+import { IFavoriteRepository } from '../../common/interfaces/favorite-repository.interface';
 import { FavoriteWithProperty } from '../../common/types/favorite-with-property.type';
 import { FindAllOptions } from '../../common/interfaces/find-all-options.interface';
 import { FavoriteResponseDto } from './dto/favorite-response.dto';
 import { Favorite } from '@prisma/client';
 import { CacheService } from '../redis/cache.service';
 import { PubSubService } from '../redis/pubsub.service';
+import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class FavoriteService {
   constructor(
-    private favoriteRepository: FavoriteRepository,
+    @Inject('IFavoriteRepository') private favoriteRepository: IFavoriteRepository,
     private cacheService: CacheService,
     private pubSubService: PubSubService,
   ) {}
 
   async addToFavorite(userId: string, propertyId: string): Promise<FavoriteResponseDto> {
     // Check if property exists
-    const property = await this.favoriteRepository.propertyExists(propertyId);
+    const propertyExists = await this.favoriteRepository.propertyExists(propertyId);
+    if (!propertyExists) throw new NotFoundException('Property not found');
+
+    // Get property data for notification
+    const property = await this.favoriteRepository.findPropertyById(propertyId);
     if (!property) throw new NotFoundException('Property not found');
 
     // Check for duplicate
@@ -42,7 +47,11 @@ export class FavoriteService {
 
   async removeFromFavorite(userId: string, propertyId: string): Promise<{ deleted: boolean }> {
     // Check if property exists
-    const property = await this.favoriteRepository.propertyExists(propertyId);
+    const propertyExists = await this.favoriteRepository.propertyExists(propertyId);
+    if (!propertyExists) throw new NotFoundException('Property not found');
+
+    // Get property data for notification
+    const property = await this.favoriteRepository.findPropertyById(propertyId);
     if (!property) throw new NotFoundException('Property not found');
 
     const result = await this.favoriteRepository.removeFromFavorite(userId, propertyId);
@@ -75,7 +84,7 @@ export class FavoriteService {
     }
     
     console.log(`Cache miss for favorites: ${userId}, fetching from database`);
-    const favorites = await this.favoriteRepository.getFavorite(userId, options);
+    const favorites = await this.favoriteRepository.getFavorites(userId, options);
     console.log(`Found ${favorites.length} favorites in database for user: ${userId}`);
     
     const result = favorites.map(this.toFavoriteResponseDto);

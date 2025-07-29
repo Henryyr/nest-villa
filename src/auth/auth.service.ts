@@ -1,14 +1,15 @@
 // src/auth/auth.service.ts
 import { Injectable, UnauthorizedException, NotFoundException, ConflictException } from '@nestjs/common';
-import { AuthRepository } from './auth.repository';
+import { IAuthRepository } from '../../common/interfaces/auth-repository.interface';
+import { Inject } from '@nestjs/common';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { AuthResponseDto, RegisterResponseDto, UserProfileDto } from './dto/auth-response.dto';
-import { JwtPayload } from 'common/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../common/interfaces/job-data.interface';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CacheService } from '../redis/cache.service';
-import { CachedUser } from 'common/interfaces/cache.interface';
+import { CachedUser } from '../../common/interfaces/redis.interface';
 import { SessionService } from '../redis/session.service';
 import { TokenService } from '../redis/token.service';
 import { RateLimitService } from '../redis/rate-limit.service';
@@ -17,7 +18,7 @@ import { QueueService } from '../redis/queue.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private authRepository: AuthRepository,
+    @Inject('IAuthRepository') private readonly authRepository: IAuthRepository,
     private jwtService: JwtService,
     private cacheService: CacheService,
     private sessionService: SessionService,

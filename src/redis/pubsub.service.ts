@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { RedisService } from './redis.service';
 import { Logger } from '@nestjs/common';
-import { PubSubMessage, SubscriptionCallback } from 'common/interfaces/pubsub.interface';
+import { PubSubMessage, SubscriptionCallback } from '../../common/interfaces/redis.interface';
 
 @Injectable()
 export class PubSubService implements OnModuleInit, OnModuleDestroy {
