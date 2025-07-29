@@ -24,6 +24,8 @@ describe('PropertyService Integration', () => {
     location: 'Bali, Indonesia',
     price: 1000000,
     type: 'VILLA',
+    latitude: 0,
+    longitude: 0,
     ownerId: mockOwner.id,
     createdAt: new Date(),
     updatedAt: new Date(),

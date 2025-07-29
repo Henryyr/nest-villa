@@ -1,3 +1,53 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export class UserNotFoundException extends HttpException {
+  constructor(message = 'User not found') {
+    super(message, HttpStatus.NOT_FOUND);
+  }
+}
+
+export class PropertyNotFoundException extends HttpException {
+  constructor(message = 'Property not found') {
+    super(message, HttpStatus.NOT_FOUND);
+  }
+}
+
+export class InvalidCredentialsException extends HttpException {
+  constructor(message = 'Invalid email or password') {
+    super(message, HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class UserAlreadyExistsException extends HttpException {
+  constructor(message = 'User with this email already exists') {
+    super(message, HttpStatus.CONFLICT);
+  }
+}
+
+export class RateLimitExceededException extends HttpException {
+  constructor(message = 'Too many requests. Please try again later.') {
+    super(message, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
+
+export class InvalidTokenException extends HttpException {
+  constructor(message = 'Invalid or expired token') {
+    super(message, HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class DatabaseOperationException extends HttpException {
+  constructor(message = 'Database operation failed') {
+    super(message, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+}
+
+export class ValidationFailedException extends HttpException {
+  constructor(message = 'Validation failed') {
+    super(message, HttpStatus.BAD_REQUEST);
+  }
+}
+
 // Custom Error Classes
 export class AppError extends Error {
   public readonly statusCode: number;

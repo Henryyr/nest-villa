@@ -6,6 +6,30 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
 import { PropertyDetailDto } from './dto/property-detail.dto';
 import { Prisma, PropertyType } from '@prisma/client';
+import { PropertyNotFoundException, DatabaseOperationException } from '../../common/types/error.types';
+
+interface PropertyImage {
+  id: string;
+  url: string;
+}
+
+interface PropertyFacility {
+  id: string;
+  name: string;
+}
+
+interface PropertyOwner {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+interface PropertyVilla {
+  id: string;
+  bedrooms: number;
+  bathrooms: number;
+  hasSwimmingPool: boolean;
+}
 
 interface PropertyWithImages {
   id: string;
@@ -14,15 +38,17 @@ interface PropertyWithImages {
   location: string;
   price: number;
   type: PropertyType;
-  images: Array<{ id: string; url: string }>;
-  villa?: { id: string; bedrooms: number; bathrooms: number; hasSwimmingPool: boolean } | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  images: PropertyImage[];
+  villa?: PropertyVilla | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 interface PropertyWithDetails extends PropertyWithImages {
-  facilities: Array<{ id: string; name: string }>;
-  owner: { id: string; name: string; avatarUrl: string | null };
+  facilities: PropertyFacility[];
+  owner: PropertyOwner;
 }
 
 function withPropertyDefaults<T extends Partial<PropertyWithDetails>>(property: T): PropertyWithDetails {
@@ -36,6 +62,8 @@ function withPropertyDefaults<T extends Partial<PropertyWithDetails>>(property: 
     location: property.location ?? '',
     price: property.price ?? 0,
     type: property.type ?? PropertyType.HOUSE,
+    latitude: property.latitude ?? 0,
+    longitude: property.longitude ?? 0,
     id: property.id ?? '',
     createdAt: property.createdAt ?? new Date(),
     updatedAt: property.updatedAt ?? new Date(),
@@ -49,58 +77,97 @@ export class PropertyService {
   ) {}
 
   async findAll(): Promise<PropertyResponseDto[]> {
-    const result = await this.propertyRepository.findAll();
-    return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
+    try {
+      const result = await this.propertyRepository.findAll();
+      return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
+    } catch (error) {
+      throw new DatabaseOperationException('Failed to retrieve properties');
+    }
   }
 
   async findById(id: string): Promise<PropertyDetailDto> {
-    const property = await this.propertyRepository.findById(id);
-    if (!property) {
-      throw new NotFoundException('Property not found');
+    try {
+      const property = await this.propertyRepository.findById(id);
+      if (!property) {
+        throw new PropertyNotFoundException();
+      }
+      return this.toPropertyDetailDto(withPropertyDefaults(property));
+    } catch (error) {
+      if (error instanceof PropertyNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseOperationException('Failed to retrieve property details');
     }
-    return this.toPropertyDetailDto(withPropertyDefaults(property));
   }
 
   async createProperty(data: CreatePropertyDto): Promise<PropertyDetailDto> {
-    const propertyData: Prisma.PropertyCreateInput = {
-      title: data.title,
-      description: data.description,
-      location: data.location,
-      price: data.price,
-      type: data.type as PropertyType,
-      owner: { connect: { id: data.ownerId } },
-    };
+    try {
+      const propertyData: Prisma.PropertyCreateInput = {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        price: data.price,
+        type: data.type as PropertyType,
+        owner: { connect: { id: data.ownerId } },
+      };
 
-    const property = await this.propertyRepository.create(propertyData);
-    const createdProperty = await this.propertyRepository.findById(property.id);
-    return this.toPropertyDetailDto(withPropertyDefaults(createdProperty!));
+      const property = await this.propertyRepository.create(propertyData);
+      const createdProperty = await this.propertyRepository.findById(property.id);
+      if (!createdProperty) {
+        throw new DatabaseOperationException('Failed to create property');
+      }
+      return this.toPropertyDetailDto(withPropertyDefaults(createdProperty));
+    } catch (error) {
+      if (error instanceof DatabaseOperationException) {
+        throw error;
+      }
+      throw new DatabaseOperationException('Failed to create property');
+    }
   }
 
   async updateProperty(id: string, data: UpdatePropertyDto): Promise<PropertyDetailDto> {
-    const existingProperty = await this.propertyRepository.findById(id);
-    if (!existingProperty) {
-      throw new NotFoundException('Property not found');
+    try {
+      const existingProperty = await this.propertyRepository.findById(id);
+      if (!existingProperty) {
+        throw new PropertyNotFoundException();
+      }
+
+      const propertyData: Prisma.PropertyUpdateInput = {
+        ...(data.title && { title: data.title }),
+        ...(data.description && { description: data.description }),
+        ...(data.location && { location: data.location }),
+        ...(data.price && { price: data.price }),
+        ...(data.type && { type: data.type as PropertyType }),
+      };
+
+      await this.propertyRepository.update(id, propertyData);
+      const updatedProperty = await this.propertyRepository.findById(id);
+      if (!updatedProperty) {
+        throw new DatabaseOperationException('Failed to update property');
+      }
+      return this.toPropertyDetailDto(withPropertyDefaults(updatedProperty));
+    } catch (error) {
+      if (error instanceof PropertyNotFoundException || 
+          error instanceof DatabaseOperationException) {
+        throw error;
+      }
+      throw new DatabaseOperationException('Failed to update property');
     }
-
-    const propertyData: Prisma.PropertyUpdateInput = {
-      ...(data.title && { title: data.title }),
-      ...(data.description && { description: data.description }),
-      ...(data.location && { location: data.location }),
-      ...(data.price && { price: data.price }),
-      ...(data.type && { type: data.type as PropertyType }),
-    };
-
-    await this.propertyRepository.update(id, propertyData);
-    const updatedProperty = await this.propertyRepository.findById(id);
-    return this.toPropertyDetailDto(withPropertyDefaults(updatedProperty!));
   }
 
   async deleteProperty(id: string): Promise<void> {
-    const existingProperty = await this.propertyRepository.findById(id);
-    if (!existingProperty) {
-      throw new NotFoundException('Property not found');
+    try {
+      const existingProperty = await this.propertyRepository.findById(id);
+      if (!existingProperty) {
+        throw new PropertyNotFoundException();
+      }
+      await this.propertyRepository.delete(id);
+    } catch (error) {
+      if (error instanceof PropertyNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseOperationException('Failed to delete property');
     }
-    await this.propertyRepository.delete(id);
   }
 
   private toPropertyResponseDto(property: PropertyWithImages): PropertyResponseDto {
@@ -111,9 +178,7 @@ export class PropertyService {
       location: property.location,
       price: property.price,
       type: property.type,
-      images: Array.isArray(property.images)
-        ? property.images.map(img => ({ id: img.id, url: img.url }))
-        : [],
+      images: property.images.map(img => ({ id: img.id, url: img.url })),
       villa: property.villa
         ? {
             id: property.villa.id,
@@ -135,11 +200,9 @@ export class PropertyService {
       location: property.location,
       price: property.price,
       type: property.type,
-      latitude: 0, // Default value since it's not in the schema
-      longitude: 0, // Default value since it's not in the schema
-      images: Array.isArray(property.images)
-        ? property.images.map(img => img.url)
-        : [],
+      latitude: property.latitude ?? 0,
+      longitude: property.longitude ?? 0,
+      images: property.images.map(img => img.url),
       villa: property.villa
         ? {
             id: property.villa.id,
@@ -148,16 +211,12 @@ export class PropertyService {
             hasSwimmingPool: property.villa.hasSwimmingPool,
           }
         : null,
-      facilities: Array.isArray(property.facilities)
-        ? property.facilities.map(facility => facility.name)
-        : [],
-      owner: property.owner
-        ? {
-            id: property.owner.id,
-            name: property.owner.name,
-            avatarUrl: property.owner.avatarUrl,
-          }
-        : { id: '', name: '', avatarUrl: null },
+      facilities: property.facilities.map(facility => facility.name),
+      owner: {
+        id: property.owner.id,
+        name: property.owner.name,
+        avatarUrl: property.owner.avatarUrl,
+      },
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
     };

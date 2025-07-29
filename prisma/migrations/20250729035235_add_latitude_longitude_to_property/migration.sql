@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Property" ADD COLUMN     "latitude" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "longitude" DOUBLE PRECISION DEFAULT 0;

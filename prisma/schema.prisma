@@ -51,6 +51,8 @@ model Property {
   location    String
   price       Int
   type        PropertyType
+  latitude    Float?          @default(0)
+  longitude   Float?          @default(0)
   ownerId     String
   owner       User            @relation("UserProperties", fields: [ownerId], references: [id])
   villa       Villa?          @relation("PropertyVilla")

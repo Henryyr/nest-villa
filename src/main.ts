@@ -1,21 +1,41 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from 'common/filters/http-exception.filter'; 
-import { LoggingInterceptor } from 'common/interceptors/logging.interceptor'; 
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { LoggingInterceptor } from '../common/interceptors/logging.interceptor';
+import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Global exception filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Global logging interceptor
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // Swagger setup
+  // Global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
+  // CORS configuration
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    credentials: true,
+  });
+
+  // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Nest Villa API')
-    .setDescription('API documentation for Nest Villa')
+    .setDescription('The Nest Villa API description')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -24,7 +44,8 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  Logger.log(`📚 Swagger API docs available at: http://localhost:3000/api/doc`);
+  Logger.log(`Application is running on: http://localhost:${port}`);
+  Logger.log(`Swagger documentation: http://localhost:${port}/api/doc`);
 }
+
 bootstrap();

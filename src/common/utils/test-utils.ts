@@ -61,6 +61,8 @@ export class TestUtils {
       location: 'Bali, Indonesia',
       price: 1000000,
       type: 'VILLA',
+      latitude: 0,
+      longitude: 0,
       ownerId: 'owner-1',
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
