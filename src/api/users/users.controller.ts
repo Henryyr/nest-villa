@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, ParseUUIDPipe, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { RolesGuard } from '../../shared/guards/roles.guard'; 
-import { Role } from '../../shared/decorators/role.decorator';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/shared/guards/roles.guard'; 
+import { Role } from 'src/shared/decorators/role.decorator';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
