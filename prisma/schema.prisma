@@ -22,6 +22,32 @@ enum PropertyType {
   APARTMENT
 }
 
+enum FileType {
+  PROPERTY_IMAGE
+  USER_AVATAR
+  DOCUMENT
+}
+
+// --- FILE MODEL ---
+model File {
+  id         String   @id @default(uuid())
+  url        String
+  fileName   String
+  fileType   FileType
+  mimeType   String
+  size       Int
+  userId     String
+  user       User     @relation("UserFiles", fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property? @relation("PropertyFiles", fields: [propertyId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([fileType])
+  @@index([uploadedAt])
+}
+
 // --- USER MODEL ---
 model User {
   id          String     @id @default(uuid())
@@ -32,6 +58,7 @@ model User {
   role        Role       @default(CUSTOMER)
   avatarUrl   String?
   properties  Property[] @relation("UserProperties")
+  files       File[]     @relation("UserFiles")
   reviews     Review[]
   bookings    Booking[]
   wishlists   Wishlist[]
@@ -61,6 +88,7 @@ model Property {
   owner       User            @relation("UserProperties", fields: [ownerId], references: [id])
   villa       Villa?          @relation("PropertyVilla")
   images      PropertyImage[]
+  files       File[]          @relation("PropertyFiles")
   reviews     Review[]
   bookings    Booking[]
   facilities  Facility[]      @relation("PropertyFacilities")

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { IPropertyRepository } from 'src/shared/interfaces/property-repository.interface';
 import { Inject } from '@nestjs/common';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -85,6 +85,15 @@ export class PropertyService {
     }
   }
 
+  async findByOwnerId(ownerId: string): Promise<PropertyResponseDto[]> {
+    try {
+      const result = await this.propertyRepository.findByOwnerId(ownerId);
+      return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
+    } catch (error) {
+      throw new DatabaseOperationException('Failed to retrieve owner properties');
+    }
+  }
+
   async findById(id: string): Promise<PropertyDetailDto> {
     try {
       const property = await this.propertyRepository.findById(id);
@@ -100,7 +109,7 @@ export class PropertyService {
     }
   }
 
-  async createProperty(data: CreatePropertyDto): Promise<PropertyDetailDto> {
+  async createProperty(data: CreatePropertyDto, ownerId: string): Promise<PropertyDetailDto> {
     try {
       const propertyData: Prisma.PropertyCreateInput = {
         title: data.title,
@@ -108,7 +117,9 @@ export class PropertyService {
         location: data.location,
         price: data.price,
         type: data.type as PropertyType,
-        owner: { connect: { id: data.ownerId } },
+        latitude: data.latitude ?? 0,
+        longitude: data.longitude ?? 0,
+        owner: { connect: { id: ownerId } },
       };
 
       const property = await this.propertyRepository.create(propertyData);
@@ -125,11 +136,16 @@ export class PropertyService {
     }
   }
 
-  async updateProperty(id: string, data: UpdatePropertyDto): Promise<PropertyDetailDto> {
+  async updateProperty(id: string, data: UpdatePropertyDto, ownerId: string): Promise<PropertyDetailDto> {
     try {
       const existingProperty = await this.propertyRepository.findById(id);
       if (!existingProperty) {
         throw new PropertyNotFoundException();
+      }
+
+      // Check if the property belongs to the authenticated owner
+      if (existingProperty.ownerId !== ownerId) {
+        throw new ForbiddenException('You can only update your own properties');
       }
 
       const propertyData: Prisma.PropertyUpdateInput = {
@@ -138,6 +154,8 @@ export class PropertyService {
         ...(data.location && { location: data.location }),
         ...(data.price && { price: data.price }),
         ...(data.type && { type: data.type as PropertyType }),
+        ...(data.latitude !== undefined && { latitude: data.latitude }),
+        ...(data.longitude !== undefined && { longitude: data.longitude }),
       };
 
       await this.propertyRepository.update(id, propertyData);
@@ -148,22 +166,30 @@ export class PropertyService {
       return this.toPropertyDetailDto(withPropertyDefaults(updatedProperty));
     } catch (error) {
       if (error instanceof PropertyNotFoundException || 
-          error instanceof DatabaseOperationException) {
+          error instanceof DatabaseOperationException ||
+          error instanceof ForbiddenException) {
         throw error;
       }
       throw new DatabaseOperationException('Failed to update property');
     }
   }
 
-  async deleteProperty(id: string): Promise<void> {
+  async deleteProperty(id: string, ownerId: string): Promise<void> {
     try {
       const existingProperty = await this.propertyRepository.findById(id);
       if (!existingProperty) {
         throw new PropertyNotFoundException();
       }
+
+      // Check if the property belongs to the authenticated owner
+      if (existingProperty.ownerId !== ownerId) {
+        throw new ForbiddenException('You can only delete your own properties');
+      }
+
       await this.propertyRepository.delete(id);
     } catch (error) {
-      if (error instanceof PropertyNotFoundException) {
+      if (error instanceof PropertyNotFoundException || 
+          error instanceof ForbiddenException) {
         throw error;
       }
       throw new DatabaseOperationException('Failed to delete property');

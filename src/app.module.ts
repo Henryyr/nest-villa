@@ -10,7 +10,7 @@ import { RedisModule } from './cache/redis/redis.module';
 import { MessageModule } from './api/message/message.module';
 import { HealthModule } from './api/health/health.module';
 import { WelcomeModule } from './welcome/welcome.module';
-
+import { FileModule } from './api/file/file.module';
 
 @Module({
   imports: [
@@ -26,7 +26,8 @@ import { WelcomeModule } from './welcome/welcome.module';
     RedisModule,
     MessageModule,
     HealthModule,
-    WelcomeModule
+    WelcomeModule,
+    FileModule
   ],
   controllers: [],
   providers: [],

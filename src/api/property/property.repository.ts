@@ -41,6 +41,41 @@ export class PropertyRepository implements IPropertyRepository {
     return { data, total, page, limit };
   }
 
+  async findByOwnerId(ownerId: string, options: FindAllOptions = {}) {
+    const { search, page = 1, limit = 10 } = options;
+    const where: Prisma.PropertyWhereInput = {
+      ownerId,
+    };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { location: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.property.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          images: true,
+          villa: true,
+          facilities: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+    return { data, total, page, limit };
+  }
+
   async findById(id: string) {
     return this.prisma.property.findUnique({
       where: { id },

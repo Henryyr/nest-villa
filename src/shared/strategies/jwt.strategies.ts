@@ -19,7 +19,7 @@
         super({
           jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
           ignoreExpiration: false,
-          secretOrKey: jwtSecret, // PASTI string, tidak undefined
+          secretOrKey: jwtSecret,
         });
       }
 
