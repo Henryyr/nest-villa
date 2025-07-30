@@ -8,11 +8,37 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { RedisModule } from './redis/redis.module';
 import { MessageModule } from './message/message.module';
+import { HealthModule } from './health/health.module';
+import { WelcomeModule } from './welcome/welcome.module';
+import {
+  appConfig,
+  databaseConfig,
+  redisConfig,
+  jwtConfig,
+  corsConfig,
+  securityConfig,
+  loggingConfig,
+  healthConfig,
+  cacheConfig,
+  swaggerConfig,
+} from '../common/config/configuration';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [
+        appConfig,
+        databaseConfig,
+        redisConfig,
+        jwtConfig,
+        corsConfig,
+        securityConfig,
+        loggingConfig,
+        healthConfig,
+        cacheConfig,
+        swaggerConfig,
+      ],
     }),
     PrismaModule,
     AuthModule,
@@ -21,7 +47,9 @@ import { MessageModule } from './message/message.module';
     WishlistModule,
     FavoriteModule,
     RedisModule,
-    MessageModule
+    MessageModule,
+    HealthModule,
+    WelcomeModule
   ],
   controllers: [],
   providers: [],

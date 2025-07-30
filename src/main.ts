@@ -6,6 +6,7 @@ import { LoggingInterceptor } from '../common/interceptors/logging.interceptor';
 import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
 
 async function bootstrap() {
+  
   const app = await NestFactory.create(AppModule);
 
   // Global exception filter
@@ -34,9 +35,9 @@ async function bootstrap() {
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Nest Villa API')
-    .setDescription('The Nest Villa API description')
-    .setVersion('1.0')
+    .setTitle(process.env.SWAGGER_TITLE || 'Nest Villa API')
+    .setDescription(process.env.SWAGGER_DESCRIPTION || 'The Nest Villa API description')
+    .setVersion(process.env.SWAGGER_VERSION || '1.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);

@@ -1,10 +1,10 @@
 import { User, Property, Message, Favorite, Wishlist } from '@prisma/client';
-import { CreateUserDto } from '../../users/dto/create-user.dto';
-import { UpdateUserDto } from '../../users/dto/update-user.dto';
-import { CreatePropertyDto } from '../../property/dto/create-property.dto';
-import { UpdatePropertyDto } from '../../property/dto/update-property.dto';
-import { SendMessageDto } from '../../message/dto/send-message.dto';
-import { SendEphemeralMessageDto } from '../../message/dto/send-ephemeral-message.dto';
+import { CreateUserDto } from '../../src/users/dto/create-user.dto';
+import { UpdateUserDto } from '../../src/users/dto/update-user.dto';
+import { CreatePropertyDto } from '../../src/property/dto/create-property.dto';
+import { UpdatePropertyDto } from '../../src/property/dto/update-property.dto';
+import { SendMessageDto } from '../../src/message/dto/send-message.dto';
+import { SendEphemeralMessageDto } from '../../src/message/dto/send-ephemeral-message.dto';
 
 export class TestUtils {
   // Mock Users

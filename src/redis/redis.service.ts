@@ -180,6 +180,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return keys.length;
   }
 
+  // Health check method
+  async ping(): Promise<string> {
+    return await this.redisClient.ping();
+  }
+
   // Get Redis clients for advanced operations
   getClient(): Redis {
     return this.redisClient;

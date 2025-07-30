@@ -9,7 +9,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { NotFoundError, ConflictError } from '../../common/types/error.types';
 import { User } from '@prisma/client';
 import { Job } from 'bullmq';
-import { TestUtils } from '../common/utils/test-utils';
+import { TestUtils } from '../../test/utils/test-utils';
 
 describe('UsersService', () => {
   let service: UsersService;
