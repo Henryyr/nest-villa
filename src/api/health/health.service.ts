@@ -59,7 +59,6 @@ export class HealthService {
     try {
       const memUsage = process.memoryUsage();
       const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
-      const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
       
       // Alert if memory usage is too high (over 1GB)
       if (heapUsedMB > 1024) {

@@ -191,7 +191,7 @@ export class TestUtils {
     };
   }
 
-  static createMockCachedProperty(overrides: Partial<{ id: string; title: string; description: string; location: string; price: number; type: string; images: string[]; villa: any; createdAt: Date; updatedAt: Date; ownerId: string }> = {}) {
+  static createMockCachedProperty(overrides: Partial<{ id: string; title: string; description: string; location: string; price: number; type: string; images: string[]; villa: unknown; createdAt: Date; updatedAt: Date; ownerId: string }> = {}) {
     return {
       id: 'property-1',
       title: 'Beautiful Villa',
@@ -231,7 +231,7 @@ export class TestUtils {
   }
 
   // Mock Request Object
-  static createMockRequest(overrides: Partial<{ user: any; ip: string; method: string; url: string; headers: Record<string, string> }> = {}) {
+  static createMockRequest(overrides: Partial<{ user: unknown; ip: string; method: string; url: string; headers: Record<string, string> }> = {}) {
     return {
       user: this.createMockUser(),
       ip: '127.0.0.1',
@@ -255,7 +255,7 @@ export class TestUtils {
   }
 
   // Mock Queue Job
-  static createMockQueueJob<T = any>(data: T, overrides: Partial<{ id: string; name: string; timestamp: number }> = {}) {
+  static createMockQueueJob<T = unknown>(data: T, overrides: Partial<{ id: string; name: string; timestamp: number }> = {}) {
     return {
       id: 'job-1',
       name: 'test-job',
@@ -266,7 +266,7 @@ export class TestUtils {
   }
 
   // Mock PubSub Message
-  static createMockPubSubMessage<T = any>(type: string, data: T, overrides: Partial<{ timestamp: number; source: string }> = {}) {
+  static createMockPubSubMessage<T = unknown>(type: string, data: T, overrides: Partial<{ timestamp: number; source: string }> = {}) {
     return {
       type,
       data,
@@ -285,7 +285,7 @@ export class TestUtils {
   }
 
   // Helper to create mock repository methods
-  static createMockRepositoryMethods<T>(entityName: string) {
+  static createMockRepositoryMethods() {
     return {
       findAll: jest.fn(),
       findById: jest.fn(),
@@ -297,7 +297,7 @@ export class TestUtils {
   }
 
   // Helper to create mock service methods
-  static createMockServiceMethods<T>(serviceName: string) {
+  static createMockServiceMethods() {
     return {
       // Generic service methods
       findAll: jest.fn(),

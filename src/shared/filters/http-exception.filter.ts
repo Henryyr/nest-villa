@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { AppError, ValidationError, NotFoundError, ConflictError, AuthenticationError, AuthorizationError } from '../types/error.types';
+import { AppError, ValidationError } from '../types/error.types';
 
 interface HttpExceptionResponse {
   message?: string | string[];

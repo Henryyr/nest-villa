@@ -123,7 +123,7 @@ export class FacilityController {
   async addToProperty(
     @Param('propertyId') propertyId: string,
     @Body() addFacilityDto: AddFacilityToPropertyDto,
-    @Request() req: any,
+    @Request() req: { user: { sub: string } },
   ) {
     return this.facilityService.addToProperty(propertyId, addFacilityDto, req.user.sub);
   }
@@ -139,7 +139,7 @@ export class FacilityController {
   async removeFromProperty(
     @Param('propertyId') propertyId: string,
     @Body() removeFacilityDto: RemoveFacilityFromPropertyDto,
-    @Request() req: any,
+    @Request() req: { user: { sub: string } },
   ) {
     return this.facilityService.removeFromProperty(propertyId, removeFacilityDto, req.user.sub);
   }

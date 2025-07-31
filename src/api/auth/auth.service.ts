@@ -1,5 +1,5 @@
 // src/auth/auth.service.ts
-import { Injectable, UnauthorizedException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IAuthRepository } from 'src/shared/interfaces/auth-repository.interface';
 import { Inject } from '@nestjs/common';
 import { RegisterAuthDto } from './dto/register-auth.dto';
@@ -170,7 +170,7 @@ export class AuthService {
       
       // Invalidate user cache
       // Note: We don't invalidate user cache on logout as it might be needed for other sessions
-    } catch (error) {
+    } catch {
       throw new DatabaseOperationException('Failed to logout. Please try again.');
     }
   }

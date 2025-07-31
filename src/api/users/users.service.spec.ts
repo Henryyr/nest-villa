@@ -4,8 +4,7 @@ import { UsersRepository } from './users.repository';
 import { CacheService } from '../../cache/redis/cache.service';
 import { SessionService } from '../../cache/redis/session.service';
 import { QueueService } from '../../cache/redis/queue.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+
 import { NotFoundError, ConflictError } from '../../shared/types/error.types';
 import { User } from '@prisma/client';
 import { Job } from 'bullmq';

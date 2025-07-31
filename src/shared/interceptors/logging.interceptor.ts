@@ -29,7 +29,7 @@ export class LoggingInterceptor implements NestInterceptor {
       .handle()
       .pipe(
         tap({
-          next: (data: unknown) => {
+          next: () => {
             const duration = Date.now() - now;
             const statusCode = res.statusCode;
             const userId = user?.id || 'anonymous';

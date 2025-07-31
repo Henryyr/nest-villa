@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { FacilityController } from './facility.controller';
 import { FacilityService } from './facility.service';
 import { FacilityRepository } from './facility.repository';
-import { IFacilityRepository } from 'src/shared/interfaces/facility-repository.interface';
 import { PropertyModule } from '../property/property.module';
 
 @Module({

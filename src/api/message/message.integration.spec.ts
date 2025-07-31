@@ -4,9 +4,7 @@ import { MessageRepository } from './message.repository';
 import { PubSubService } from '../../cache/redis/pubsub.service';
 import { QueueService } from '../../cache/redis/queue.service';
 import { CacheService } from '../../cache/redis/cache.service';
-import { SendMessageDto } from './dto/send-message.dto';
-import { SendEphemeralMessageDto } from './dto/send-ephemeral-message.dto';
-import { Message } from '@prisma/client';
+
 import { Job } from 'bull';
 import * as TestUtils from './message.test-utils';
 
@@ -15,8 +13,6 @@ describe('MessageService Integration', () => {
   let repository: MessageRepository;
   let pubSubService: PubSubService;
   let queueService: QueueService;
-  let cacheService: CacheService;
-
   const mockUser = {
     id: 'user-1',
     name: 'John Doe',
@@ -29,27 +25,6 @@ describe('MessageService Integration', () => {
     name: 'Jane Doe',
     email: 'jane@example.com',
     role: 'OWNER',
-  };
-
-  const mockMessage: Message = {
-    id: 'msg-1',
-    senderId: mockUser.id,
-    receiverId: mockReceiver.id,
-    content: 'Hello, this is a test message',
-    propertyId: 'property-1',
-    createdAt: new Date(),
-  };
-
-  const mockSendMessageDto: SendMessageDto = {
-    receiverId: mockReceiver.id,
-    content: 'Hello, this is a test message',
-    propertyId: 'property-1',
-  };
-
-  const mockSendEphemeralMessageDto: SendEphemeralMessageDto = {
-    receiverId: mockReceiver.id,
-    content: 'This is an ephemeral message',
-    propertyId: 'property-1',
   };
 
   beforeEach(async () => {
@@ -93,7 +68,6 @@ describe('MessageService Integration', () => {
     repository = module.get<MessageRepository>(MessageRepository);
     pubSubService = module.get<PubSubService>(PubSubService);
     queueService = module.get<QueueService>(QueueService);
-    cacheService = module.get<CacheService>(CacheService);
   });
 
   describe('sendMessage', () => {

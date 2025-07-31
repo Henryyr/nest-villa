@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { FindAllOptions } from './find-all-options.interface';
 
 export interface PaginatedResult<T> {

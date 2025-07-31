@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 interface ValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 interface ErrorResponse {
@@ -50,7 +50,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = 'Validation failed';
         
         if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-          const responseObj = exceptionResponse as any;
+          const responseObj = exceptionResponse as Record<string, unknown>;
           
           if (responseObj.errors && Array.isArray(responseObj.errors)) {
             // Custom validation pipe format
@@ -86,14 +86,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             // Single error message
             validationErrors = [{
               field: 'general',
-              message: responseObj.message,
+              message: typeof responseObj.message === 'string' 
+                ? responseObj.message 
+                : String(responseObj.message),
             }];
           }
         }
       } else {
         message = typeof exceptionResponse === 'string' 
           ? exceptionResponse 
-          : (exceptionResponse as any)?.message || 'Bad Request';
+          : (exceptionResponse as Record<string, unknown>)?.message as string || 'Bad Request';
       }
     } else if (exception instanceof Error) {
       message = exception.message;

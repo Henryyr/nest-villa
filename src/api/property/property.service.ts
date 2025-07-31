@@ -92,7 +92,7 @@ export class PropertyService {
     try {
       const result = await this.propertyRepository.findAll();
       return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
-    } catch (error) {
+    } catch {
       throw new DatabaseOperationException('Failed to retrieve properties');
     }
   }
@@ -101,7 +101,7 @@ export class PropertyService {
     try {
       const result = await this.propertyRepository.findByOwnerId(ownerId);
       return result.data.map(property => this.toPropertyResponseDto(withPropertyDefaults(property)));
-    } catch (error) {
+    } catch {
       throw new DatabaseOperationException('Failed to retrieve owner properties');
     }
   }

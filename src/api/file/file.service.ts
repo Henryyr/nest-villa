@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { CacheService } from 'src/cache/redis/cache.service';
 import { FileRepository } from './file.repository';
-import { UploadFileDto, FileResponseDto, FileType, UploadFileMultipartDto } from './dto/upload-file.dto';
+import { UploadFileDto, FileResponseDto, UploadFileMultipartDto } from './dto/upload-file.dto';
+import { FileType } from '@prisma/client';
 
 interface FileMetadata {
   id: string;
@@ -13,7 +14,7 @@ interface FileMetadata {
   mimeType: string;
   size: number;
   uploadedAt: Date;
-  propertyId?: string;
+  propertyId?: string | null;
   userId?: string;
 }
 
@@ -55,7 +56,7 @@ export class FileService {
       const fileBuffer = Buffer.from(dto.fileContent, 'base64');
 
       // Upload to Supabase Storage
-      const { data, error } = await this.supabase.storage
+      const { error } = await this.supabase.storage
         .from(this.getBucketName(dto.fileType))
         .upload(filePath, fileBuffer, {
           contentType: dto.mimeType,
@@ -95,7 +96,7 @@ export class FileService {
     }
   }
 
-  async uploadFileMultipart(dto: UploadFileMultipartDto, file: any, userId: string): Promise<FileResponseDto> {
+  async uploadFileMultipart(dto: UploadFileMultipartDto, file: Express.Multer.File, userId: string): Promise<FileResponseDto> {
     try {
       // Check if Supabase is configured
       if (!this.supabase) {
@@ -154,7 +155,7 @@ export class FileService {
       }
 
       // Upload to Supabase Storage
-      const { data, error } = await this.supabase.storage
+      const { error } = await this.supabase.storage
         .from(this.getBucketName(dto.fileType))
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
@@ -200,7 +201,7 @@ export class FileService {
       const cachedFile = await this.cacheService.get(`file:${fileId}`);
       if (cachedFile) {
         this.logger.log(`File retrieved from cache: ${fileId}`);
-        return this.toFileResponseDto(cachedFile);
+        return this.toFileResponseDto(cachedFile as FileMetadata);
       }
 
       // Get from database
@@ -372,7 +373,7 @@ export class FileService {
     }
   }
 
-  private async cacheFileMetadata(fileMetadata: any): Promise<void> {
+  private async cacheFileMetadata(fileMetadata: FileMetadata): Promise<void> {
     const cacheKey = `file:${fileMetadata.id}`;
     await this.cacheService.set(cacheKey, fileMetadata, 3600); // Cache for 1 hour
   }
@@ -383,7 +384,7 @@ export class FileService {
     return urlParts.slice(-2).join('/'); // Get last two parts of the path
   }
 
-  private toFileResponseDto(fileRecord: any): FileResponseDto {
+  private toFileResponseDto(fileRecord: FileMetadata): FileResponseDto {
     return {
       id: fileRecord.id,
       url: fileRecord.url,

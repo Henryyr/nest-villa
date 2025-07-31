@@ -1,11 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum } from 'class-validator';
-
-export enum FileType {
-  PROPERTY_IMAGE = 'PROPERTY_IMAGE',
-  USER_AVATAR = 'USER_AVATAR',
-  DOCUMENT = 'DOCUMENT',
-}
+import { FileType } from '@prisma/client';
 
 export class UploadFileDto {
   @ApiProperty({ description: 'File type', enum: FileType })

@@ -5,7 +5,7 @@ import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Role } from 'src/shared/decorators/role.decorator';
 import { FileService } from './file.service';
-import { UploadFileDto, FileResponseDto, DeleteFileDto, UploadFileMultipartDto } from './dto/upload-file.dto';
+import { UploadFileDto, FileResponseDto, UploadFileMultipartDto } from './dto/upload-file.dto';
 import { Request } from 'express';
 import { JwtPayload } from 'src/shared/interfaces/job-data.interface';
 

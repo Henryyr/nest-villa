@@ -7,7 +7,6 @@ import { UpdateFacilityDto } from './dto/update-facility.dto';
 import { FacilityResponseDto } from './dto/facility-response.dto';
 import { AddFacilityToPropertyDto } from './dto/add-facility-to-property.dto';
 import { RemoveFacilityFromPropertyDto } from './dto/remove-facility-from-property.dto';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FacilityService {
@@ -129,7 +128,13 @@ export class FacilityService {
     }));
   }
 
-  private toFacilityResponseDto(facility: any): FacilityResponseDto {
+  private toFacilityResponseDto(facility: { 
+    id: string; 
+    name: string; 
+    propertyCount?: number; 
+    createdAt: Date; 
+    updatedAt: Date; 
+  }): FacilityResponseDto {
     return {
       id: facility.id,
       name: facility.name,

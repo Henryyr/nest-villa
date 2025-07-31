@@ -18,7 +18,6 @@ describe('UsersService Integration', () => {
   let cacheService: CacheService;
   let sessionService: SessionService;
   let queueService: QueueService;
-  let prismaService: PrismaService;
 
   const mockUser: User = {
     id: 'user-1',
@@ -96,7 +95,6 @@ describe('UsersService Integration', () => {
     cacheService = module.get<CacheService>(CacheService);
     sessionService = module.get<SessionService>(SessionService);
     queueService = module.get<QueueService>(QueueService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   describe('findAll', () => {
