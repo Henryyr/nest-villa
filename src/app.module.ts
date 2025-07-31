@@ -11,6 +11,7 @@ import { MessageModule } from './api/message/message.module';
 import { HealthModule } from './api/health/health.module';
 import { WelcomeModule } from './welcome/welcome.module';
 import { FileModule } from './api/file/file.module';
+import { FacilityModule } from './api/facility/facility.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { FileModule } from './api/file/file.module';
     MessageModule,
     HealthModule,
     WelcomeModule,
-    FileModule
+    FileModule,
+    FacilityModule
   ],
   controllers: [],
   providers: [],

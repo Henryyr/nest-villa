@@ -164,6 +164,11 @@ model Facility {
   id         String     @id @default(uuid())
   name       String
   properties Property[] @relation("PropertyFacilities")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([name])
+  @@index([createdAt])
 }
 
 // --- FAVORITE (Properti yang disukai user, sekadar penanda) ---

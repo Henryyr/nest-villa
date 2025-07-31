@@ -18,5 +18,6 @@ import { RedisModule } from 'src/cache/redis/redis.module';
     { provide: 'IPropertyRepository', useClass: PropertyRepository },
   ],
   controllers: [PropertyController],
+  exports: [PropertyService],
 })
 export class PropertyModule {} 

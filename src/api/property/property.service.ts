@@ -208,6 +208,25 @@ export class PropertyService {
     }
   }
 
+  async validatePropertyOwnership(propertyId: string, ownerId: string): Promise<void> {
+    try {
+      const property = await this.propertyRepository.findById(propertyId);
+      if (!property) {
+        throw new PropertyNotFoundException();
+      }
+
+      if (property.ownerId !== ownerId) {
+        throw new ForbiddenException('You can only manage facilities for your own properties');
+      }
+    } catch (error) {
+      if (error instanceof PropertyNotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new DatabaseOperationException('Failed to validate property ownership');
+    }
+  }
+
   private toPropertyResponseDto(property: PropertyWithImages): PropertyResponseDto {
     // Combine images from PropertyImage and File tables
     const propertyImages = property.images.map(img => ({ id: img.id, url: img.url }));

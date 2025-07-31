@@ -18,10 +18,7 @@
 - [x] Add comprehensive documentation for file upload system
 
 ## In Progress 🔄
-- [ ] Test the new owner property creation API endpoints
-- [ ] Test the file upload system with Supabase Storage
-- [ ] Add integration tests for file management
-- [ ] Add property facility management
+- [x] Add property facility management
 
 ## Planned 📋
 - [ ] Add property availability calendar
