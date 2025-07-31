@@ -46,7 +46,7 @@ export class FileController {
   async uploadFileMultipart(
     @Req() req: Request & { user: JwtPayload },
     @Body() dto: UploadFileMultipartDto,
-    @UploadedFile() file: any,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<FileResponseDto> {
     return await this.fileService.uploadFileMultipart(dto, file, req.user.sub);
   }
