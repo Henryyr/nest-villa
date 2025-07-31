@@ -13,6 +13,16 @@ interface PropertyImage {
   url: string;
 }
 
+interface PropertyFile {
+  id: string;
+  url: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: Date;
+}
+
 interface PropertyFacility {
   id: string;
   name: string;
@@ -41,6 +51,7 @@ interface PropertyWithImages {
   latitude?: number | null;
   longitude?: number | null;
   images: PropertyImage[];
+  files?: PropertyFile[];
   villa?: PropertyVilla | null;
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +66,7 @@ function withPropertyDefaults<T extends Partial<PropertyWithDetails>>(property: 
   return {
     ...property,
     images: Array.isArray(property.images) ? property.images : [],
+    files: Array.isArray(property.files) ? property.files : [],
     facilities: Array.isArray(property.facilities) ? property.facilities : [],
     owner: property.owner ?? { id: '', name: '', avatarUrl: null },
     title: property.title ?? '',
@@ -197,6 +209,11 @@ export class PropertyService {
   }
 
   private toPropertyResponseDto(property: PropertyWithImages): PropertyResponseDto {
+    // Combine images from PropertyImage and File tables
+    const propertyImages = property.images.map(img => ({ id: img.id, url: img.url }));
+    const fileImages = (property.files || []).map(file => ({ id: file.id, url: file.url }));
+    const allImages = [...propertyImages, ...fileImages];
+
     return {
       id: property.id,
       title: property.title,
@@ -204,7 +221,7 @@ export class PropertyService {
       location: property.location,
       price: property.price,
       type: property.type,
-      images: property.images.map(img => ({ id: img.id, url: img.url })),
+      images: allImages,
       villa: property.villa
         ? {
             id: property.villa.id,
@@ -219,6 +236,11 @@ export class PropertyService {
   }
 
   private toPropertyDetailDto(property: PropertyWithDetails): PropertyDetailDto {
+    // Combine images from PropertyImage and File tables
+    const propertyImageUrls = property.images.map(img => img.url);
+    const fileImageUrls = (property.files || []).map(file => file.url);
+    const allImageUrls = [...propertyImageUrls, ...fileImageUrls];
+
     return {
       id: property.id,
       title: property.title,
@@ -228,7 +250,7 @@ export class PropertyService {
       type: property.type,
       latitude: property.latitude ?? 0,
       longitude: property.longitude ?? 0,
-      images: property.images.map(img => img.url),
+      images: allImageUrls,
       villa: property.villa
         ? {
             id: property.villa.id,

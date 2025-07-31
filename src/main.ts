@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './shared/interceptors/logging.interceptor';
 import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
@@ -23,6 +23,21 @@ async function bootstrap() {
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
+      },
+      exceptionFactory: (errors) => {
+        const messages = errors.map(error => {
+          const constraints = error.constraints;
+          if (constraints) {
+            const messages = Object.values(constraints);
+            return `${error.property}: ${messages.join(', ')}`;
+          }
+          return `${error.property}: Invalid value`;
+        });
+        
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: messages,
+        });
       },
     }),
   );

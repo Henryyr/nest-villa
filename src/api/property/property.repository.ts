@@ -24,6 +24,11 @@ export class PropertyRepository implements IPropertyRepository {
         take: limit,
         include: {
           images: true,
+          files: {
+            where: {
+              fileType: 'PROPERTY_IMAGE'
+            }
+          },
           villa: true,
           facilities: true,
           owner: {
@@ -59,6 +64,11 @@ export class PropertyRepository implements IPropertyRepository {
         take: limit,
         include: {
           images: true,
+          files: {
+            where: {
+              fileType: 'PROPERTY_IMAGE'
+            }
+          },
           villa: true,
           facilities: true,
           owner: {
@@ -81,6 +91,11 @@ export class PropertyRepository implements IPropertyRepository {
       where: { id },
       include: {
         images: true,
+        files: {
+          where: {
+            fileType: 'PROPERTY_IMAGE'
+          }
+        },
         villa: true,
         facilities: true,
         owner: {
