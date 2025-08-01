@@ -9,7 +9,7 @@ import { FavoriteModule } from './api/favorite/favorite.module';
 import { RedisModule } from './cache/redis/redis.module';
 import { MessageModule } from './api/message/message.module';
 import { HealthModule } from './api/health/health.module';
-import { WelcomeModule } from './welcome/welcome.module';
+import { WelcomeModule } from './api/welcome/welcome.module';
 import { FileModule } from './api/file/file.module';
 import { FacilityModule } from './api/facility/facility.module';
 
