@@ -1,29 +1,51 @@
-// Queue Job Types
+export interface QueueJob {
+  id: string;
+  name: string;
+  data: Record<string, unknown>;
+  options?: QueueJobOptions;
+}
+
+export interface QueueJobOptions {
+  delay?: number;
+  priority?: number;
+  attempts?: number;
+  backoff?: {
+    type: string;
+    delay: number;
+  };
+}
+
+export interface QueueResult {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 export interface EmailJobData {
   to: string;
   subject: string;
+  template: string;
   body: string;
-  template?: string;
-  variables?: Record<string, unknown>;
+  context?: Record<string, unknown>;
 }
 
 export interface NotificationJobData {
   userId: string;
+  type: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
   data?: Record<string, unknown>;
 }
 
 export interface PropertyJobData {
   propertyId: string;
-  action: 'create' | 'update' | 'delete' | 'index' | 'process-images';
+  action: string;
   data?: Record<string, unknown>;
 }
 
 export interface UserJobData {
   userId: string;
-  action: 'welcome' | 'profile-update' | 'account-deletion';
+  action: string;
   data?: Record<string, unknown>;
 }
 
@@ -35,34 +57,17 @@ export interface SearchJobData {
 
 export interface FileJobData {
   fileId: string;
-  action: 'upload' | 'process' | 'delete';
+  action: string;
   data?: Record<string, unknown>;
 }
 
 export interface MessageJobData {
-  type: 'ephemeral-message' | 'persistent-message' | 'notification';
-  to: string;
-  from: string;
+  senderId: string;
+  receiverId: string;
   content: string;
   propertyId?: string;
-  timestamp: number;
-  data?: Record<string, unknown>;
 }
 
-// Queue Options
-export interface QueueJobOptions {
-  delay?: number;
-  priority?: number;
-  attempts?: number;
-  backoff?: {
-    type: 'exponential' | 'fixed';
-    delay: number;
-  };
-  removeOnComplete?: number;
-  removeOnFail?: number;
-}
-
-// Queue Statistics
 export interface QueueStats {
   waiting: number;
   active: number;
@@ -72,5 +77,4 @@ export interface QueueStats {
   paused: number;
 }
 
-// Job Status Types
 export type JobStatus = 'waiting' | 'active' | 'completed' | 'failed' | 'delayed' | 'paused'; 

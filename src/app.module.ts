@@ -1,22 +1,27 @@
 import { Module, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './database/prisma/prisma.module';
-import { AuthModule } from './api/auth/auth.module';
-import { UsersModule } from './api/users/users.module';
-import { PropertyModule } from './api/property/property.module';
-import { WishlistModule } from './api/wishlist/wishlist.module';
-import { FavoriteModule } from './api/favorite/favorite.module';
-import { RedisModule } from './cache/redis/redis.module';
-import { MessageModule } from './api/message/message.module';
-import { HealthModule } from './api/health/health.module';
-import { WelcomeModule } from './api/welcome/welcome.module';
-import { FileModule } from './api/file/file.module';
-import { FacilityModule } from './api/facility/facility.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/user/users.module';
+import { PropertyModule } from './modules/property/property.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { FavoriteModule } from './modules/favorite/favorite.module';
+import { QueueModule } from './jobs/queue.module';
+import { MessageModule } from './modules/message/message.module';
+import { HealthModule } from './modules/health/health.module';
+import { WelcomeModule } from './modules/welcome/welcome.module';
+import { FileModule } from './modules/file/file.module';
+import { FacilityModule } from './modules/facility/facility.module';
+import { BookingModule } from './modules/booking/booking.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import appConfig from './config/app.config';
+import prismaConfig from './config/prisma.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
+      load: [appConfig, prismaConfig]
     }),
     PrismaModule,
     AuthModule,
@@ -24,12 +29,14 @@ import { FacilityModule } from './api/facility/facility.module';
     PropertyModule,
     WishlistModule,
     FavoriteModule,
-    RedisModule,
+    QueueModule,
     MessageModule,
     HealthModule,
     WelcomeModule,
     FileModule,
-    FacilityModule
+    FacilityModule,
+    BookingModule,
+    PaymentModule
   ],
   controllers: [],
   providers: [],

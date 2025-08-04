@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma/prisma.service'; 
+import { PrismaService } from 'src/prisma/prisma.service'; 
 
 @Injectable()
 export class DatabaseOptimizationService {
@@ -36,16 +36,17 @@ export class DatabaseOptimizationService {
     const skip = (page - 1) * limit;
 
     // Build where conditions
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (type) {
       where.type = type;
     }
     
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = minPrice;
-      if (maxPrice) where.price.lte = maxPrice;
+      const priceFilter: { gte?: number; lte?: number } = {};
+      if (minPrice) priceFilter.gte = minPrice;
+      if (maxPrice) priceFilter.lte = maxPrice;
+      where.price = priceFilter;
     }
     
     if (location) {
@@ -56,7 +57,7 @@ export class DatabaseOptimizationService {
     }
 
     // Build include object
-    const include: any = {};
+    const include: Record<string, unknown> = {};
     
     if (includeOwner) {
       include.owner = {
@@ -215,7 +216,7 @@ export class DatabaseOptimizationService {
     const skip = (page - 1) * limit;
 
     // Build where conditions
-    const where: any = {
+    const where: Record<string, unknown> = {
       // Check for conflicting bookings
       bookings: {
         none: {
@@ -234,9 +235,10 @@ export class DatabaseOptimizationService {
     }
 
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = minPrice;
-      if (maxPrice) where.price.lte = maxPrice;
+      const priceFilter: { gte?: number; lte?: number } = {};
+      if (minPrice) priceFilter.gte = minPrice;
+      if (maxPrice) priceFilter.lte = maxPrice;
+      where.price = priceFilter;
     }
 
     const [properties, total] = await Promise.all([
